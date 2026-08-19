@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#F7F4EF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Napi terv – étrend & edzés</title>
+<style>
+:root{
+  --bg:#F7F4EF; --card:#FFFFFF; --soft:#F1ECE3;
+  --ink:#22201C; --muted:#8B8377; --line:#E7E0D4;
+  --kcal:#E2703A; --pro:#2E7D52; --ch:#D3941F; --fat:#2F6FE0;
+  --accent:#4E7C56; --accent-d:#3C6244; --warn:#B3541E;
+  --link:#3C6DBF;
+  --r:16px; --r-s:12px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+}
+html.dark{
+  --bg:#171511; --card:#211F1A; --soft:#2A2721;
+  --ink:#EDE8DE; --muted:#9C9385; --line:#38352D;
+  --kcal:#F0895A; --pro:#5BC98A; --ch:#E3B04E; --fat:#6C9BF2;
+  --accent:#5C9268; --accent-d:#4A7A55; --warn:#E38657;
+  --link:#7CA6F0;
+}
+html.dark body{background:var(--bg)}
+html.dark header{background:rgba(23,21,17,.94)}
+html.dark nav.tabs{background:rgba(23,21,17,.97)}
+html.dark .navbtn i, html.dark nav.tabs button i{filter:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  font-size:15px; line-height:1.45;
+  padding-bottom:calc(78px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.serif{font-family:var(--serif);font-weight:600;letter-spacing:.2px}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+.hidden{display:none !important}
+
+/* ---------- fejléc ---------- */
+header{
+  position:sticky;top:0;z-index:40;background:rgba(247,244,239,.94);
+  backdrop-filter:blur(8px); border-bottom:1px solid var(--line);
+  padding:calc(8px + env(safe-area-inset-top)) 14px 8px;
+}
+.hrow{display:flex;align-items:center;gap:10px}
+.hrow h1{font-size:19px;margin:0;flex:1;text-align:center}
+.hrow h1 small{display:block;font-family:var(--sans);font-size:11px;color:var(--muted);font-weight:400;letter-spacing:.4px;text-transform:uppercase}
+.navbtn{width:36px;height:36px;border-radius:50%;background:var(--soft);font-size:17px;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.today-pill{display:block;margin:6px auto 0;font-size:12px;color:var(--accent);background:#EAF0EA;padding:3px 12px;border-radius:20px}
+
+/* ---------- kártyák ---------- */
+main{padding:14px 14px 20px;max-width:640px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card.tight{padding:12px}
+.sec-title{font-family:var(--serif);font-size:17px;margin:22px 2px 10px;display:flex;align-items:center;gap:8px}
+.sec-title .cnt{font-family:var(--sans);font-size:12px;color:var(--muted);margin-left:auto;font-weight:400}
+
+/* ---------- napi összesítő (a képernyőkép stílusa) ---------- */
+.total-hero{text-align:center;padding:20px 16px 6px}
+.total-hero .big{font-family:var(--serif);font-size:46px;line-height:1;color:var(--kcal);font-weight:600}
+.total-hero .big span{font-size:16px;color:var(--muted);font-family:var(--sans);margin-left:4px}
+.total-hero .sub{font-size:12.5px;color:var(--muted);margin-top:6px}
+.macros{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:16px}
+.macro{text-align:center}
+.macro b{display:block;font-size:22px;font-weight:600;line-height:1.1}
+.macro small{font-size:11.5px;color:var(--muted);letter-spacing:.2px}
+.macro .tgt{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.m-p b{color:var(--pro)} .m-c b{color:var(--ch)} .m-f b{color:var(--fat)}
+.bar{height:6px;border-radius:6px;background:var(--soft);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .35s ease}
+.bar.kcal i{background:var(--kcal)} .bar.p i{background:var(--pro)}
+.bar.c i{background:var(--ch)} .bar.f i{background:var(--fat)}
+.bar.over i{background:var(--warn)}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.mini{background:var(--soft);border-radius:var(--r-s);padding:10px 12px}
+.mini .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.mini .v{font-size:17px;font-weight:600;margin-top:2px}
+
+/* ---------- étkezés sorok ---------- */
+.meal{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.meal-head{display:flex;align-items:center;gap:10px;padding:13px 14px}
+.meal-head .ic{font-size:17px;width:24px;text-align:center}
+.meal-head .nm{font-family:var(--serif);font-size:16px;flex:1}
+.meal-head .kc{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meal-head .add{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-size:19px;line-height:28px;text-align:center;flex:none}
+.item{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-top:1px solid var(--line);background:#FCFAF7}
+.item .t{flex:1;min-width:0}
+.item .t b{font-weight:500;font-size:14px;display:block}
+.item .t small{color:var(--muted);font-size:11.5px}
+.item .kc{font-size:13px;color:var(--kcal);font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item .del{color:#C24A38;font-size:15px;padding:0 2px;opacity:.75}
+.empty{padding:12px 14px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);background:#FCFAF7}
+
+/* ---------- gombok, űrlap ---------- */
+.btn{display:block;width:100%;background:var(--accent);color:#fff;padding:14px;border-radius:var(--r-s);font-size:15px;font-weight:600;text-align:center}
+.btn:active{background:var(--accent-d)}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.ghost.on{background:var(--accent);color:#fff}
+#knowledgeWrap summary::-webkit-details-marker{display:none}
+#knowledgeWrap summary::marker{content:''}
+.btn.line{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.sm{padding:9px;font-size:13px;font-weight:500}
+.btn.danger{background:#F4E4E0;color:#A33A24}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+label.fld{display:block;margin-bottom:12px}
+label.fld span{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;letter-spacing:.2px}
+input,select,textarea{
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-s);
+  background:#fff;color:#22201C;font-size:16px;outline:none
+}
+html.dark input,html.dark select,html.dark textarea{
+  background:var(--card);color:var(--ink);border-color:var(--line)
+}
+input::placeholder,select::placeholder,textarea::placeholder{color:#9C9385;opacity:1}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.note{background:#FBF3E6;border:1px solid #EFE0C4;border-radius:var(--r-s);padding:10px 12px;font-size:12.5px;color:#6B5836;margin-top:10px}
+.chips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;padding:7px 13px;border-radius:20px;background:var(--soft);font-size:13px;color:var(--muted);border:1px solid transparent;white-space:nowrap}
+.chip.on{background:#EAF0EA;color:var(--accent);border-color:#CFDECF;font-weight:600}
+.tag{display:inline-block;font-size:10.5px;background:var(--soft);color:var(--muted);padding:3px 9px;border-radius:20px;margin:0 4px 4px 0}
+
+/* ---------- lista (receptválasztó) ---------- */
+.pick{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.pick:last-child{border-bottom:none}
+.pick .t{flex:1;min-width:0}
+.pick .t b{display:block;font-size:14.5px;font-weight:500}
+.pick .t small{color:var(--muted);font-size:11.5px}
+.pick .m{text-align:right;white-space:nowrap}
+.pick .m .k{color:var(--kcal);font-weight:600;font-size:14px}
+.pick .m .mm{font-size:10.5px;color:var(--muted)}
+
+/* ---------- lap (modal) ---------- */
+.sheet-bg{position:fixed;inset:0;background:rgba(30,26,20,.45);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet-bg.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--bg);
+  border-radius:20px 20px 0 0;max-height:92vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .26s cubic-bezier(.3,.8,.4,1)
+}
+.sheet.on{transform:translateY(0)}
+.sheet-head{padding:14px 16px 10px;border-bottom:1px solid var(--line);position:relative}
+.sheet-head h2{margin:0;font-size:18px;text-align:center}
+.sheet-head .x{position:absolute;right:12px;top:12px;width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:16px}
+.sheet-body{overflow-y:auto;padding:12px 16px calc(20px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.grab{width:38px;height:4px;background:var(--line);border-radius:4px;margin:0 auto 8px}
+
+/* ---------- alsó menü ---------- */
+nav.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.97);
+  border-top:1px solid var(--line);display:flex;
+  padding:6px 0 calc(6px + env(safe-area-inset-bottom));backdrop-filter:blur(8px)
+}
+nav.tabs button{flex:1;text-align:center;color:var(--muted);font-size:10.5px;padding:4px 0}
+nav.tabs button i{display:block;font-style:normal;font-size:19px;margin-bottom:1px;filter:grayscale(1);opacity:.55}
+nav.tabs button.on{color:var(--accent);font-weight:600}
+nav.tabs button.on i{filter:none;opacity:1}
+
+/* ---------- egyéb ---------- */
+.toast{
+  position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(14px);
+  background:#2C2A25;color:#fff;padding:11px 18px;border-radius:24px;font-size:13.5px;
+  z-index:80;opacity:0;pointer-events:none;transition:.22s;max-width:88vw;text-align:center
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.wbtns{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.wbtn{background:var(--soft);border-radius:var(--r-s);padding:11px 0;text-align:center;font-size:13px;font-weight:600}
+.ex{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.ex:last-child{border:none}
+.ex .n{flex:1}
+.ex .s{color:var(--muted);white-space:nowrap;font-size:12.5px}
+.ex a{color:var(--accent);text-decoration:none;font-size:12px}
+.daylist{display:flex;justify-content:space-between;padding:11px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
+.daylist:last-child{border:none}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-left:5px;vertical-align:middle}
+
+/* ---------- edzés gyakorlat sorok ---------- */
+.exrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.exrow:last-child{border:none}
+.exrow .en{flex:1;min-width:0}
+.exrow .en b{font-weight:500;font-size:13.5px;display:block}
+.exrow .en small{color:var(--muted);font-size:12px}
+.exrow .yt{flex:none;width:34px;height:34px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--link);text-decoration:none}
+.exrow .yt:active{background:var(--line)}
+.weekchips{display:flex;gap:7px;margin-bottom:12px}
+.weekchips .chip{flex:1;text-align:center}
+.daychips{display:flex;gap:7px;overflow-x:auto;padding:2px 0 10px;-webkit-overflow-scrolling:touch}
+.daychips::-webkit-scrollbar{display:none}
+.warmup-line{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--soft);border-radius:var(--r-s);font-size:12.5px;color:var(--muted);margin-bottom:10px}
+.warmup-line a{color:var(--link);text-decoration:none;font-weight:600;margin-left:auto;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app">
+
+<header>
+  <div class="hrow">
+    <button class="navbtn" id="btnDatePrev">‹</button>
+    <h1 id="dateTitle">Ma<small id="dateSub">augusztus 17.</small></h1>
+    <button class="navbtn" id="btnDateNext">›</button>
+    <button class="navbtn" id="btnDarkMode" title="Sötét mód">🌙</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== ÁTTEKINTÉS TAB ===================== -->
+  <section id="tab-home">
+    <div class="card total-hero" id="heroCard">
+      <div class="big" id="kcalLeftBig">0<span>kcal maradt</span></div>
+      <div class="sub" id="kcalSubText">0 / 0 kcal elfogyasztva</div>
+      <div class="bar kcal" style="margin-top:14px"><i id="barKcal" style="width:0%"></i></div>
+      <div class="macros">
+        <div class="macro m-p"><b id="mProVal">0g</b><small>Fehérje</small><span class="tgt" id="mProTgt">/ 0g</span><div class="bar p"><i id="barP" style="width:0%"></i></div></div>
+        <div class="macro m-c"><b id="mChVal">0g</b><small>Szénhidrát</small><span class="tgt" id="mChTgt">/ 0g</span><div class="bar c"><i id="barC" style="width:0%"></i></div></div>
+        <div class="macro m-f"><b id="mFatVal">0g</b><small>Zsír</small><span class="tgt" id="mFatTgt">/ 0g</span><div class="bar f"><i id="barF" style="width:0%"></i></div></div>
+      </div>
+      <div class="mini-grid">
+        <div class="mini"><div class="l">Edzéssel égetve</div><div class="v" id="miniBurn">0 kcal</div></div>
+        <div class="mini"><div class="l">Folyadékveszteség</div><div class="v" id="miniFluid">0 ml</div></div>
+      </div>
+    </div>
+
+    <div class="card tight" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <div><b>☕ Napi kávé</b><div class="hint">Add meg, mi van benne — mindenki máshogy issza</div></div>
+        <button class="btn ghost sm" id="btnOpenCoffee">+ Kávé hozzáadása</button>
+      </div>
+      <div id="coffeeLogWrap" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card tight" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+        <b>🌾 Napi rost</b>
+        <span class="hint" id="fiberHint">0 / 30 g</span>
+      </div>
+      <div class="bar" style="margin-top:8px"><i id="barFiber" style="width:0%;background:var(--accent)"></i></div>
+      <div class="hint" style="margin-top:10px">Írd be az étel nevét és a mennyiséget — a rostot és a többi makrót is automatikusan kiszámoljuk, és bekerül a kiválasztott étkezésbe is.</div>
+      <div class="row2" style="margin-top:6px">
+        <input type="text" id="fiberFoodInput" list="fiberFoodList" placeholder="pl. uborka">
+        <input type="number" id="fiberGramsInput" placeholder="gramm" min="0" step="1" value="100">
+      </div>
+      <datalist id="fiberFoodList"></datalist>
+      <label class="fld" style="margin-top:8px"><span>Melyik étkezéshez add hozzá?</span>
+        <select id="fiberCat"><option value="reggeli">Reggeli</option><option value="tizorai">Tízórai</option><option value="ebed" selected>Ebéd</option><option value="uzsonna">Uzsonna</option><option value="vacsora">Vacsora</option></select>
+      </label>
+      <div class="hint" id="fiberCalcPreview" style="margin-top:2px"></div>
+      <button class="btn ghost sm" id="btnAddFiberFood" style="margin-top:8px">Hozzáadás</button>
+      <details style="margin-top:10px">
+        <summary style="cursor:pointer;font-size:12px;color:var(--muted)">Vagy add meg közvetlenül a rost mennyiségét (g) — makrók nélkül</summary>
+        <div class="row2" style="margin-top:8px">
+          <input type="number" id="fiberInput" placeholder="g rost hozzáadása" min="0" step="0.5">
+          <button class="btn ghost sm" id="btnAddFiber">Hozzáadás</button>
+        </div>
+      </details>
+      <div id="fiberLogWrap" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card tight" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+      <div><b>🚫🍷 Alkoholmentes nap</b><div class="hint">A protokoll első számú alapelve</div></div>
+      <button class="btn ghost sm" id="btnToggleAlcoholFree">Jelölés</button>
+    </div>
+
+    <div class="sec-title">🍽️ Mai étkezések</div>
+    <div id="mealsWrap"></div>
+
+    <div class="sec-title">🏋️ Mai edzés</div>
+    <div class="card tight" id="workoutCard">
+      <div id="workoutEmpty" class="hint" style="padding:6px 4px">Még nincs edzés hozzáadva erre a napra.</div>
+      <div id="workoutList"></div>
+      <button class="btn ghost sm" style="margin-top:10px" id="btnAddWorkout">+ Edzés / mozgás hozzáadása</button>
+    </div>
+  </section>
+
+  <!-- ===================== ÉTELEK TAB (könyvtár) ===================== -->
+  <section id="tab-foods" class="hidden">
+    <div class="card tight">
+      <input type="text" id="foodSearch" placeholder="Keresés az ételek között…">
+    </div>
+    <div class="chips" id="catChips"></div>
+    <div class="card tight" id="foodListWrap"></div>
+    <div class="row2" style="margin-top:4px">
+      <button class="btn" id="btnNewFood">+ Saját étel hozzáadása</button>
+      <button class="btn ghost" id="btnScanBarcode">📷 Vonalkód beolvasása</button>
+    </div>
+  </section>
+
+  <!-- ===================== NAPLÓ TAB ===================== -->
+  <section id="tab-log" class="hidden">
+    <div class="sec-title">Korábbi napok</div>
+    <div class="card tight" id="historyWrap"></div>
+  </section>
+
+  <!-- ===================== BEÁLLÍTÁSOK TAB ===================== -->
+  <!-- ===================== TUDÁSTÁR TAB ===================== -->
+  <section id="tab-knowledge" class="hidden">
+    <div class="hint" style="margin-bottom:14px">Tudásbázis, amit idővel bővítünk — táplálkozási és életmódi alapelvek a saját étrend- és edzésprogramodhoz.</div>
+    <div id="knowledgeWrap"></div>
+  </section>
+
+  <section id="tab-settings" class="hidden">
+    <div class="sec-title">🎯 Napi célok</div>
+    <div class="card">
+      <label class="fld"><span>Napi célkalória (kcal)</span>
+        <input type="number" id="setKcal" value="1400">
+      </label>
+      <div class="row3">
+        <label class="fld"><span>Fehérje %</span><input type="number" id="setP" value="35"></label>
+        <label class="fld"><span>Szénhidrát %</span><input type="number" id="setC" value="35"></label>
+        <label class="fld"><span>Zsír %</span><input type="number" id="setF" value="30"></label>
+      </div>
+      <div class="hint" id="pctHint">Összesen: 100%</div>
+      <button class="btn" id="btnSaveGoals" style="margin-top:12px">Célok mentése</button>
+    </div>
+
+    <div class="sec-title">☕ Napi kávé</div>
+    <div class="card">
+      <div class="hint">A kávéd összetevőit (fekete kávé, cukor, édesítő, tej/növényi tej stb.) mostantól a <b>Ma</b> nézeten, kávénként állítod össze — mindig azt adod hozzá, amit ténylegesen ittál aznap.</div>
+    </div>
+
+    <div class="sec-title">🔥 TDEE-kalkulátor</div>
+    <div class="card">
+      <div class="row2">
+        <label class="fld"><span>Nem</span>
+          <select id="tdeeSex"><option value="f">Nő</option><option value="m">Férfi</option></select>
+        </label>
+        <label class="fld"><span>Életkor</span><input type="number" id="tdeeAge" placeholder="pl. 30"></label>
+      </div>
+      <div class="row2">
+        <label class="fld"><span>Testsúly (kg)</span><input type="number" id="tdeeWeight" placeholder="pl. 65"></label>
+        <label class="fld"><span>Magasság (cm)</span><input type="number" id="tdeeHeight" placeholder="pl. 165"></label>
+      </div>
+      <label class="fld"><span>Aktivitás szint</span>
+        <select id="tdeeActivity">
+          <option value="1.2">Ülőmunka, alig mozgok</option>
+          <option value="1.375">Enyhén aktív (heti 1-3 edzés)</option>
+          <option value="1.55" selected>Mérsékelten aktív (heti 3-5 edzés)</option>
+          <option value="1.725">Nagyon aktív (heti 6-7 edzés)</option>
+          <option value="1.9">Extrém aktív (fizikai munka + edzés)</option>
+        </select>
+      </label>
+      <button class="btn ghost" id="btnCalcTdee">TDEE kiszámítása</button>
+      <div class="note hidden" id="tdeeResult"></div>
+    </div>
+
+    <div class="sec-title">🔔 Emlékeztetők</div>
+    <div class="card">
+      <div class="hint" style="margin-bottom:10px">Push-értesítés az étkezési időszakok kezdetén (amíg ez a lap nyitva/háttérben van a böngészőben).</div>
+      <div id="notifRows"></div>
+      <button class="btn ghost" id="btnEnableNotif" style="margin-top:10px">🔔 Értesítések engedélyezése</button>
+      <div class="hint" id="notifStatus" style="margin-top:8px"></div>
+    </div>
+
+    <div class="sec-title">📥 Új étrend importálása (PDF-ből)</div>
+    <div class="card">
+      <div class="hint" style="margin-bottom:10px">
+        Az app közvetlenül nem tud PDF-et beolvasni, de ez a menetrend 2 perc:<br><br>
+        <b style="color:var(--ink)">1.</b> Nyiss egy új Claude beszélgetést, töltsd fel az új étrend PDF-et.<br>
+        <b style="color:var(--ink)">2.</b> Másold be neki az alábbi promptot (a "Prompt másolása" gombbal).<br>
+        <b style="color:var(--ink)">3.</b> Claude egy letölthető <code>.json</code> fájlt ad vissza — töltsd le.<br>
+        <b style="color:var(--ink)">4.</b> Itt lent töltsd fel — az új ételek bekerülnek a listádba.
+      </div>
+      <button class="btn ghost sm" id="btnCopyPrompt">📋 Import prompt másolása</button>
+      <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
+        <label class="fld"><span>Étel-JSON feltöltése</span>
+          <input type="file" id="foodJsonInput" accept="application/json,.json">
+        </label>
+        <div class="note hidden" id="foodImportResult"></div>
+      </div>
+      <button class="btn line sm" id="btnExportFoods" style="margin-top:10px">⬇️ Saját ételeim exportálása (biztonsági mentés)</button>
+    </div>
+
+    <div class="sec-title">💾 Adatok</div>
+    <div class="card hint">
+      Minden adatod ezen az eszközön, ehhez a beszélgetéshez kötve tárolódik automatikusan. Ételt bármikor hozzáadhatsz az Ételek fülön.
+    </div>
+  </section>
+
+</main>
+
+<nav class="tabs">
+  <button class="tabbtn on" data-tab="home"><i>🏠</i>Ma</button>
+  <button class="tabbtn" data-tab="foods"><i>🍽️</i>Ételek</button>
+  <button class="tabbtn" data-tab="log"><i>📅</i>Napló</button>
+  <button class="tabbtn" data-tab="knowledge"><i>📚</i>Tudástár</button>
+  <button class="tabbtn" data-tab="settings"><i>⚙️</i>Beállítás</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+<div class="sheet-bg" id="sheetBg"></div>
+
+<!-- ÉTEL VÁLASZTÓ LAP -->
+<div class="sheet" id="sheetPicker">
+  <div class="sheet-head"><div class="grab"></div><h2 id="pickerTitle">Válassz ételt</h2><button class="x" data-close>✕</button></div>
+  <div class="sheet-body">
+    <input type="text" id="pickerSearch" placeholder="Keresés…" style="margin-bottom:10px">
+    <div id="pickerList"></div>
+  </div>
+</div>
+
+<!-- ÉTEL RÉSZLETEK / ADAG LAP -->
+<div class="sheet" id="sheetDetail">
+  <div class="sheet-head"><div class="grab"></div><h2 id="detailTitle">Étel</h2><button class="x" data-close>✕</button></div>
+  <div class="sheet-body" id="detailBody"></div>
+</div>
+
+<!-- EDZÉS VÁLASZTÓ LAP -->
+<div class="sheet" id="sheetWorkout">
+  <div class="sheet-head"><div class="grab"></div><h2>Edzés / mozgás hozzáadása</h2><button class="x" data-close>✕</button></div>
+  <div class="sheet-body">
+    <div class="chips" id="wCatChips"></div>
+    <div id="wContent"></div>
+  </div>
+</div>
+
+<!-- SAJÁT ÉTEL LAP -->
+<div class="sheet" id="sheetNewFood">
+  <div class="sheet-head"><div class="grab"></div><h2>Saját étel hozzáadása</h2><button class="x" data-close>✕</button></div>
+  <div class="sheet-body">
+    <label class="fld"><span>Kategória</span>
+      <select id="nfCat"><option value="reggeli">Reggeli</option><option value="tizorai">Tízórai</option><option value="ebed">Ebéd</option><option value="uzsonna">Uzsonna</option><option value="vacsora">Vacsora</option></select>
+    </label>
+    <label class="fld"><span>Étel neve</span><input type="text" id="nfName" placeholder="pl. Saját saláta"></label>
+    <div class="row3">
+      <label class="fld"><span>Fehérje (g)</span><input type="number" id="nfP" value="0"></label>
+      <label class="fld"><span>Szénhidrát (g)</span><input type="number" id="nfC" value="0"></label>
+      <label class="fld"><span>Zsír (g)</span><input type="number" id="nfF" value="0"></label>
+    </div>
+    <label class="fld"><span>Kalória (kcal) — üresen hagyva automatikusan számol</span><input type="number" id="nfKcal" placeholder="auto"></label>
+    <label class="fld"><span>Hozzávalók (opcionális)</span><textarea id="nfIng" rows="3" placeholder="pl. 150g csirkemell, 1 tk olívaolaj…"></textarea></label>
+    <label class="fld"><span>Elkészítés (opcionális)</span><textarea id="nfEl" rows="3" placeholder="pl. A csirkemellet süsd meg serpenyőben…"></textarea></label>
+    <button class="btn" id="btnSaveNewFood">Étel mentése</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheetBarcode">
+  <div class="sheet-head"><div class="grab"></div><h2>Vonalkód beolvasása</h2><button class="x" data-close>✕</button></div>
+  <div class="sheet-body">
+    <div class="hint" style="margin-bottom:10px">Irányítsd a kamerát a termék vonalkódjára, vagy írd be kézzel, ha a beolvasás nem támogatott a böngésződben.</div>
+    <div id="bcCameraWrap" style="position:relative;border-radius:12px;overflow:hidden;background:#000;display:none">
+      <video id="bcVideo" autoplay playsinline muted style="width:100%;display:block;max-height:280px;object-fit:cover"></video>
+    </div>
+    <div class="row2" style="margin-top:10px">
+      <button class="btn ghost sm" id="btnBcStart">📷 Kamera indítása</button>
+      <button class="btn ghost sm" id="btnBcStop" style="display:none">Kamera leállítása</button>
+    </div>
+    <label class="fld" style="margin-top:12px"><span>Vonalkód (kézi bevitel)</span>
+      <input type="text" id="bcManualCode" inputmode="numeric" placeholder="pl. 5901234123457">
+    </label>
+    <button class="btn ghost" id="btnBcLookup">Keresés</button>
+    <div class="hint" id="bcStatus" style="margin-top:10px"></div>
+
+    <div id="bcResult" class="hidden" style="margin-top:14px">
+      <div class="card tight" id="bcResultCard"></div>
+      <label class="fld"><span>Kategória</span>
+        <select id="bcCat"><option value="reggeli">Reggeli</option><option value="tizorai">Tízórai</option><option value="ebed">Ebéd</option><option value="uzsonna">Uzsonna</option><option value="vacsora">Vacsora</option></select>
+      </label>
+      <label class="fld"><span>Mennyiség (g)</span><input type="number" id="bcGrams" value="100" min="1"></label>
+      <div class="note" id="bcPreview"></div>
+      <button class="btn" id="btnBcAddToLog" style="margin-top:10px">Hozzáadás a mai naphoz</button>
+      <button class="btn ghost" id="btnBcSaveOnly" style="margin-top:8px">Csak mentés az étellistába</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheetCoffee">
+  <div class="sheet-head"><div class="grab"></div><h2>Kávé összeállítása</h2><button class="x" data-close>✕</button></div>
+  <div class="sheet-body">
+    <div class="hint" style="margin-bottom:10px">Pipáld ki, mi került bele, és add meg a mennyiséget (g/ml). Ami kimarad, azt hagyd üresen vagy 0-n.</div>
+    <div id="coffeeBuilderList"></div>
+    <div class="note" id="coffeePreview" style="margin-top:10px">Válassz összetevőket a számításhoz.</div>
+    <label class="fld" style="margin-top:10px"><span>Melyik étkezéshez add hozzá?</span>
+      <select id="coffeeCat"><option value="reggeli">Reggeli</option><option value="tizorai" selected>Tízórai</option><option value="ebed">Ebéd</option><option value="uzsonna">Uzsonna</option><option value="vacsora">Vacsora</option></select>
+    </label>
+    <button class="btn" id="btnAddCoffee" style="margin-top:8px">Hozzáadás a mai naphoz</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ====== ÉTELADATBÁZIS — a "Szálkásító program – étrend" PDF melléklet alapján ======
+// p = fehérje(g), c = szénhidrát(g), f = zsír(g), k = kalória(kcal)
+// ============ TÁROLÁS: valódi böngésző localStorage ============
+// A window.storage API csak a fejlesztői (Claude) környezetben létezik.
+// Éles telefonos/GitHub Pages használathoz ez a shim sima localStorage-ra
+// képezi le ugyanazt a get/set/delete/list felületet, hogy a mentés
+// ténylegesen működjön a felhasználó böngészőjében is.
+window.storage = window.storage || (function(){
+  const PFX = 'napiterv:';
+  return {
+    async get(key, shared){
+      try{
+        const raw = localStorage.getItem(PFX + key);
+        if(raw === null) return null;
+        return { key, value: raw, shared: !!shared };
+      }catch(e){ return null; }
+    },
+    async set(key, value, shared){
+      try{
+        localStorage.setItem(PFX + key, value);
+        return { key, value, shared: !!shared };
+      }catch(e){ return null; }
+    },
+    async delete(key, shared){
+      try{
+        localStorage.removeItem(PFX + key);
+        return { key, deleted: true, shared: !!shared };
+      }catch(e){ return null; }
+    },
+    async list(prefix, shared){
+      try{
+        const p = PFX + (prefix || '');
+        const keys = [];
+        for(let i=0;i<localStorage.length;i++){
+          const k = localStorage.key(i);
+          if(k && k.indexOf(p) === 0) keys.push(k.slice(PFX.length));
+        }
+        return { keys, prefix, shared: !!shared };
+      }catch(e){ return null; }
+    }
+  };
+})();
+
+const FOOD_DB = {
+reggeli: [
+{n:"Krémes fehérjés zabkása mogyoróvajjal",p:27,c:35,f:10,k:350,ing:"40 g zabpehely, 25 g fehérjepor, 10 g mogyoróvaj, 50 g bogyós gyümölcs, víz vagy mandulatej",el:"A zabpelyhet főzd meg vízben vagy mandulatejben. Amikor elkészült, keverd hozzá a fehérjeport. Tedd rá a mogyoróvajat és a gyümölcsöt."},
+{n:"Fehérjés tojásos pirítós",p:25,c:28,f:12,k:330,ing:"2 tojás, 2 szelet teljes kiőrlésű kenyér (40 g), 20 g csirkemell sonka, zöldség (paradicsom, paprika, uborka)",el:"A csirkemell sonkát süsd meg serpenyőben. Amikor megpirult, üsd rá a tojásokat, és süsd rántottának. Közben a kenyérszeleteket pirítsd meg. A kész tojásos-sonkás keveréket halmozd a pirítósra, majd friss zöldségekkel tálald."},
+{n:"Protein palacsinta",p:28,c:30,f:9,k:340,ing:"1 db tojás, 30 g zabliszt, 25 g fehérjepor, 50 g bogyós gyümölcs, 50–70 ml víz vagy mandulatej, édesítő, kalóriamentes pancake szirup",el:"Egy tálban keverd össze a tojást, a zablisztet és a fehérjeport. Add hozzá a folyadékot, és keverd simára, palacsintatésztává. Hagyd állni 2-3 percig, majd hevített serpenyőben süsd ki a palacsintákat, oldalanként kb. 1-2 percig, aranybarnára. Tálald bogyós gyümölccsel, és locsold meg kalóriamentes sziruppal."},
+{n:"Joghurtos protein tál",p:27,c:32,f:10,k:350,ing:"200 g görög joghurt (light) / protein joghurt / Skyr, 20 g zabpehely, 10 g mogyoróvaj (GymBeam), 50–70 g gyümölcs, édesítő vagy fahéj",el:"A görög joghurtot keverd krémes állagúra. Add hozzá a zabpelyhet, hagyd állni 2-3 percig, hogy kissé megpuhuljon. Kanalazd rá a mogyoróvajat, tedd rá a gyümölcsöt. Ízlés szerint édesítővel vagy fahéjjal fogyaszd."},
+{n:"Krémes fehérjés rizskása",p:26,c:38,f:9,k:340,ing:"50 g protein cream of rice, 150 ml víz vagy mandulatej, 10 g mogyoróvaj, 50 g bogyós gyümölcs",el:"A rizskását keverd össze vízzel vagy mandulatejjel, majd főzd össze krémes állagúra. Ha kész, keverd bele a mogyoróvajat, és tedd rá a gyümölcsöt."},
+{n:"Tiramisu zabkása \u201Cdesszert reggeli\u201D",p:27,c:38,f:10,k:350,ing:"40 g zabpehely, 25 g fehérjepor (vanília), 1 tk instant kávé, 150 ml víz vagy mandulatej, 10 g mogyoróvaj, kakaópor szóráshoz",el:"A zabpelyhet főzd meg a folyadékban, majd keverd bele az instant kávét. Ha elkészült, keverd hozzá a fehérjeport. Tedd rá a mogyoróvajat, és szórd meg kakaóporral. Ha előző este elkészíted és hűtőbe teszed, igazi „tiramisu desszert” állaga lesz."},
+{n:"Cottage cheese-es toast tükörtojással",p:30,c:32,f:13,k:380,ing:"2 szelet teljes kiőrlésű toast kenyér, 100 g cottage cheese, 20 g csirkemell sonka, 1 tojás, friss zöldségek",el:"A kenyérszeleteket pirítsd meg. A tojást serpenyőben süsd tükörtojásnak. A cottage cheese-t kend a pirítósra, tedd rá a csirkemell sonkát és a tükörtojást. Végül friss zöldségekkel tálald."},
+{n:"Tortilla wrapp",p:30,c:30,f:11,k:360,ing:"1 db teljes kiőrlésű tortilla, 80 g csirkemell sonka, 80 g cottage cheese, 20 g light sajt, zöldség",el:"A tortillát egy száraz serpenyőben melegítsd át 1-2 percig, hogy puhább és hajtogatható legyen. A csirkemell sonkát enyhén pirítsd meg. Kend meg a tortillát cottage cheese-zel, szórd meg a reszelt light sajttal, tedd rá a sonkát és a friss zöldségeket. Tekerd fel szorosan, és félbe is vághatod."},
+{n:"Avokádós-sonkás wrap",p:25,c:30,f:12,k:350,ing:"1 tortilla, 50 g csirkemell sonka, 30 g avokádó, zöldség",el:"A tortillát száraz serpenyőben melegítsd meg 1-2 percig, hogy hajtogatható legyen. Az avokádót villával törd össze, sózd, borsozd. Kend meg vele a tortillát, tedd rá a csirkemell sonkát és a zöldségeket. Tekerd fel szorosan."},
+{n:"Csokis-banános protein smoothie",p:25,c:35,f:9,k:340,ing:"25 g csokis fehérjepor, 1 kisebb banán, 10 g mogyoróvaj, 200 ml mandulatej",el:"Az összes hozzávalót turmixold össze krémesre."},
+{n:"Raffaello Zabkása",p:31,c:33,f:11,k:370,ing:"40 g zabpehely, 150 ml cukormentes mandulatej, 20 g vaníliás fehérjepor, 10 g kókuszreszelék, 80 g görög joghurt/Skyr, 5 g mandulaforgács, édesítő",el:"A zabpelyhet öntsd fel a mandulatejjel, folyamatos kevergetés mellett főzd 4-5 percig, közepes lángon. Vedd le a tűzről, keverd hozzá a fehérjeport, majd a görög joghurtot/Skyrt. Tálald mandulaforgáccsal és kókuszreszelékkel."},
+{n:"Protein Palacsinta GymBeam Zero Sziruppal",p:32,c:34,f:9,k:390,ing:"1 tojás, 30 g zabliszt, 25 g fehérjepor, 65–90 g görög joghurt, kalóriamentes szirup",el:"A zabot keverd össze a mandulatejjel és a tojással, add hozzá a fehérjeport, és keverd össze masszává. Hagyd pihenni pár percig. Melegíts fel egy tapadásmentes serpenyőt, alacsony-közepes lángon süsd meg a palacsintákat. Amikor a teteje buborékos, fordítsd meg. Tálald GymBeam Zero sziruppal és friss gyümölccsel. Én mindig kisebb palacsintákat sütök belőle, mert így sokkal könnyebben megfordítható, „amerikai palacsinta” állaga lesz."},
+{n:"Túrós-Banános Zabkása",p:30,c:35,f:8,k:360,ing:"50 g zabpehely, 150 ml tej, 1 adag fehérjepor, 1/2 banán, fahéj, tetejére banánszeletek",el:"Forrald fel a zabot a tejjel. Alacsony lángon főzd 5-7 percig, amíg besűrűsödik (vagy mikrózd meg). Vedd le a tűzről, keverd bele a fehérjeport. Édesítsd, fűszerezd, majd tedd tetejére a banánszeleteket és fahéjat. Ha pudingosabb állagot szeretnél, hagyd tovább állni – a zab még tovább is magába szívja a folyadékot, és krémesebb lesz."},
+{n:"Epres Protein Smoothie",p:25,c:18,f:5,k:230,ing:"150 g fagyasztott eper, 150 ml cukormentes mandulatej, 100 g vaníliás Skyr, 15 g vaníliás fehérjepor, pár jégkocka",el:"Az összes hozzávalót tedd turmixgépbe, és turmixold krémesre. Ha sűrűbben szereted, tehetsz bele több jeget vagy kevesebb folyadékot."},
+{n:"Fitness Szendvics",p:29,c:30,f:12,k:340,ing:"2 szelet teljes kiőrlésű toast kenyér, 20 g csirkemellsonka, 20 g light sajt, 80 g cottage cheese, só, borsvatal, zöldségek",el:"A kenyérszeleteket pirítsd meg enyhén, toasterben vagy serpenyőben. Kend meg cottage cheese-zel, tedd rá a csirkemellsonkát és a light sajtot. Sózd, borsozd, add hozzá a zöldségeket, majd zárd össze a szendvicset."},
+{n:"Protein Tejbegríz",p:26,c:38,f:7,k:320,ing:"250 ml tej, 35 g búzadara, 12 g vaníliás fehérjepor, fahéj, édesítő",el:"A tejet öntsd egy kisebb lábosba, add hozzá a búzadarát. Alacsony lángon főzd 3-5 percig, amíg besűrűsödik. Vedd le a tűzről, keverd bele a fehérjeport. Édesítsd, fűszerezd fahéjjal, és tálald."},
+{n:"Tortilla Kakaós Csiga",p:33,c:35,f:6,k:327,ing:"1 tortilla lap, 1 adag csokis fehérjepor, 1 tk kakaópor, 1 evőkanál görög joghurt",el:"Egy kis tálban keverd össze a csokis fehérjeport, kakaóport és a görög joghurtot. Kend el egyenletesen a tortillán, tekerd fel szorosan, majd vágd karikákra."},
+{n:"Sonkás-Tojásos Bagel Fitness Verzió",p:32,c:34,f:14,k:390,ing:"1 teljes kiőrlésű bagel, 2 tojás, 40 g csirke- vagy pulykamellsonka, saláta, 20 g light sajt",el:"A csirke- vagy pulykamellsonkát picit pirítsd meg. Készíts rántottát a tojásból. Pakold mindkettőt a felvágott, megpirított bagelbe, salátával és light sajttal."},
+{n:"Protein French Toast",p:28,c:36,f:10,k:390,ing:"2 szelet teljes kiőrlésű toast kenyér, 1 tojás, 60 ml mandulatej, 10 g vaníliás fehérjepor, fahéj, édesítő, topping: eper vagy banán",el:"Egy mélyebb tálban keverd össze a tojást, a mandulatejet, a fehérjeport és a fahéjat. Mártsd bele a kenyérszeleteket, hagyd jól átitatódni, majd serpenyőben süsd meg mindkét oldalát közepes lángon aranybarnára. Tálald frissen, eperrel vagy banánnal."},
+{n:"Tojásos Cottage Cheese Zsemle",p:26,c:25,f:8,k:320,ing:"1 db teljes kiőrlésű zsemle (70 g), 2 tojás, 75 g cottage cheese, paradicsom, saláta, só, bors",el:"Készíts rántottát a tojásból. Vágd félbe a zsemlét, kend meg az alsó felét cottage cheese-zel, tedd rá a paradicsomot és a salátát, sózd. Helyezd rá a rántottát, zárd össze a zsemlét."},
+,
+{n:"Zöldséges tojásrántotta, teljes kiőrlésű kenyér (Challenge, hétfő reggeli)",p:15.5,c:24.0,f:11.0,k:258,ing:"2 db tojás (nőknek 1 sárgája + 2 fehérje), 80 g paprika, 30 g vöröshagyma, 5 ml olívaolaj, 1 szelet teljes kiőrlésű toast kenyér, 100 g friss zöldség, só, bors, petrezselyem",el:"A paprikát és a vöröshagymát apróra vágva kevés olívaolajon pirítsd meg. Add hozzá a felvert tojást (1 sárgáját + 2 fehérjét), süsd rántottának, sózd, borsozd, petrezselyemmel szórd meg. Teljes kiőrlésű kenyérrel és friss zöldségekkel tálald."},
+{n:"Zabkása joghurttal, bogyós gyümölccsel (Challenge, kedd reggeli)",p:13.5,c:45.5,f:5.4,k:284,ing:"40 g zabpehely, 150 g natúr joghurt (1,5%-os), 100 g bogyós gyümölcs, fahéj, édesítőszer",el:"A zabpelyhet vízben vagy tejben főzd meg puhára. Keverd hozzá vagy tálald mellé a natúr joghurtot, tedd rá a bogyós gyümölcsöt, ízesítsd fahéjjal és édesítővel ízlés szerint."},
+{n:"Körözött csirkemellsonkával és zöldségekkel (Challenge, szerda reggeli)",p:33.2,c:17.0,f:7.4,k:267,ing:"100 g csirkemell- vagy pulykamellsonka, 100 g friss zöldségek, 3 db puffasztott rizs, 60 g félzsíros túró, 100 g natúr joghurt (1,5%-os), 20 g lilahagyma, só, bors, köménymag",el:"A félzsíros túrót keverd össze a natúr joghurttal, az apróra vágott lilahagymával, sóval, borssal és köménymaggal krémes körözötté. Tálald a csirkemell- vagy pulykamellsonkával, a puffasztott rizzsel és friss zöldségekkel."},
+{n:"Főtt tojás, avokádó, teljes kiőrlésű kenyér (Challenge, csütörtök reggeli)",p:20.1,c:21.4,f:24.2,k:383,ing:"2 db főtt tojás, 50 g avokádó, 1,5 szelet teljes kiőrlésű toast kenyér, 5 ml olívaolaj, só, bors, fokhagyma, citromlé",el:"A tojásokat főzd keményre. Az avokádót villával törd össze, ízesítsd citromlével, sóval, borssal, egy csepp olívaolajjal. Kend a teljes kiőrlésű kenyérre, a felszeletelt főtt tojással tálald."},
+{n:"Zabkása növényi tejben, túróval és gyümölccsel (Challenge, péntek reggeli)",p:26.4,c:42.0,f:4.9,k:317,ing:"40 g zabpehely, 100 g zsírszegény túró, 100 g bogyós gyümölcs vagy szezonális gyümölcs, 1 dl cukormentes növényi tej, fahéj, édesítőszer",el:"A zabpelyhet lassú lángon főzd meg a növényi tejben. Ha elkészült, keverd hozzá a túrót és a gyümölcsöt. Ízesítsd fahéjjal és édesítőszerrel."},
+{n:"Ham & Eggs, friss zöldség, puffasztott rizs (Challenge, szombat reggeli)",p:25.0,c:9.6,f:16.8,k:289,ing:"2 db tojás, 50 g csirkemell- vagy pulykamellsonka, 2 db puffasztott rizs, 150 g friss zöldség, 5 ml olívaolaj, só, bors, fűszerpaprika",el:"A sonkát kevés olívaolajon enyhén pirítsd meg, majd üsd rá a tojásokat, süsd tükörre vagy rántottának. Fűszerezd sóval, borssal, fűszerpaprikával. Puffasztott rizzsel és friss zöldségekkel tálald."},
+{n:"Spenótos omlett, puffasztott rizs (Challenge, vasárnap reggeli)",p:12.3,c:5.3,f:10.0,k:161,ing:"2 db tojás (nőknek 1 sárgája + 2 fehérje), 80 g friss spenót, 2 db puffasztott rizs, 5 ml olívaolaj, só, bors",el:"A spenótot kevés olívaolajon fonnyaszd meg. Add hozzá a felvert tojást, süsd omlettnek alacsony lángon, sózd, borsozd. Puffasztott rizzsel tálald."}
+],
+tizorai: [
+{n:"Skyr joghurt + Korpovit keksz",p:15,c:18,f:1,k:160,ing:"150 g Skyr joghurt, 3 db Korpovit keksz",el:"Rétegezd egy pohárba a Skyr joghurtot és a Korpovit kekszet, és már fogyasztható is."},
+{n:"Fehérjeszelet vagy fehérjés nápolyi",p:20,c:18,f:7,k:200,ing:"1 db GymBeam fehérjeszelet vagy fehérjés nápolyi",el:"Készen kapható, csomagolásból azonnal fogyasztható – kényelmes „mentő nasi”, amikor sietsz vagy édesre vágysz."},
+{n:"Alma + mogyoróvaj",p:3,c:25,f:9,k:190,ing:"1 közepes alma, 10 g mogyoróvaj",el:"Az almát mosd meg, szeleteld fel, és fogyaszd a mogyoróvajjal együtt (mártogatva vagy megkenve)."},
+{n:"Banán + joghurt",p:6,c:30,f:2,k:180,ing:"1 kisebb banán, 100 g joghurt (görög, cukormentes, Skyr vagy fehérjés joghurt)",el:"Tedd a banánt joghurttal együtt 10-15 percre hűtőbe fogyasztás előtt, hidegen még „desszertesebb” élményt ad."},
+{n:"Protein puding",p:15,c:10,f:3,k:150,ing:"1 db protein puding",el:"Fogyasztható azonnal, hűtve a legfinomabb."},
+{n:"Krémes fehérjés túrókrém (kedvenc)",p:35,c:25,f:4,k:300,ing:"200 g sovány krémes túró, 1 adag fehérjepor (karamellás), édesítő, 3 db Korpovit keksz, opció: liofilizált gyümölcs",el:"A túrót és a fehérjeport keverd össze krémesre, ízlés szerint édesítsd. Tálald a Korpovit keksszel, tetejére szórhatsz liofilizált gyümölcsöt is."},
+{n:"Rákóczi túrós pohárkrém (5 perc)",p:20,c:25,f:5,k:240,ing:"3 db cukormentes keksz (Korpovit), 150 g túró, 50 g joghurt, citromhéj, édesítő, 30 g cukormentes baracklekvár",el:"A kekszet morzsold össze egy pohár aljába. Keverd össze a túrót a joghurttal, citromhéjjal és édesítővel, majd kanalazd a keksz tetejére. A tetejére tedd a baracklekvárt."},
+{n:"Protein lávasüti",p:22,c:10,f:10,k:220,ing:"1 tojás, 25 g csokis fehérjepor, 10 g kakaópor, 10 g mogyoróvaj, 30 ml tej vagy mandulatej, édesítő",el:"Az összes hozzávalót keverd össze egy tálban. Öntsd egy kis csészébe vagy bögrébe, majd mikrózd 40-60 másodpercig, amíg megsül, de a közepe még kicsit krémes marad."},
+{n:"Diétás Raffaello",p:20,c:8,f:9,k:200,ing:"100 g túró, 20 g vaníliás fehérjepor, 10 g kókuszreszelék, édesítő, pár csepp víz",el:"Keverd össze a hozzávalókat, formázz belőle kis golyókat, majd forgasd meg kókuszreszelékben. Hűtőben 30 percig állva sokkal finomabb lesz."},
+{n:"Banános-mogyoróvajas protein \u201Efagyi\u201D",p:18,c:25,f:7,k:220,ing:"1 fagyasztott banán (100 g), 20 g fehérjepor, 10 g mogyoróvaj, 20–30 ml víz vagy mandulatej",el:"A fagyasztott banánt tedd turmixgépbe, add hozzá a fehérjeport és a mogyoróvajat, önts hozzá egy kevés folyadékot. Turmixold krémes, fagyihoz hasonló állagúra."},
+{n:"Narancs",p:1,c:17,f:0,k:70,ing:"1 db közepes narancs (kb. 150–180 g)",el:"Hámozd meg, szeleteld fel, és fogyaszd frissen."},
+{n:"Anett-féle Kókuszgolyó",p:25,c:24,f:10,k:310,ing:"35 g aprószemű zabpehely, 10 g kakaópor, 20 g csokoládés fehérjepor, 1 kk rumaroma, édesítő, 20–30 ml tej, 5 g kókuszreszelék",el:"A zabpelyhet keverd össze a kakaóporral és a csokis fehérjeporral. Add hozzá a rumaromát és az édesítőt, majd apránként a tejet, amíg formázható masszát nem kapsz. Formázz belőle 8-10 golyót, forgasd meg kókuszreszelékben, és tedd hűtőbe legalább 1 órára, hogy összeálljanak."},
+{n:"Joghurtos gyümölcskehely",p:14,c:12,f:4,k:145,ing:"100 g görög joghurt, 50 g erdei gyümölcs, édesítő",el:"A görög joghurtot ízesítsd édesítővel. Egy pohárban rétegezd a joghurtot és az erdei gyümölcsöt egymásra. Fogyasztható azonnal, vagy tedd 10-15 percre hűtőbe."},
+{n:"Jegeskávé Fehérjével",p:20,c:6,f:4,k:150,ing:"1 adag espresso / 80 ml erős kávé, 150 ml cukormentes mandulatej, 20 g fehérjepor, jégkocka, édesítő",el:"Főzd le a kávét, hagyd kissé kihűlni. Egy shakerbe tedd a fehérjeport, a mandulatejet és a jégkockát, öntsd rá a kávét, majd zárd le és rázd össze alaposan."},
+{n:"Epres Cheesecake Pohárkrém",p:24,c:18,f:4,k:220,ing:"150 g vaníliás Skyr, 10 g vaníliás fehérjepor, 50 g eper, 1 db cukormentes keksz, pár csepp vanília aroma",el:"A vaníliás Skyrt keverd össze a fehérjeporral és a vanília aromával. Az epret vágd kisebb darabokra. Egy pohárban rétegezd a krémet, az epret és a kekszet, majd ismételd meg a rétegzést."},
+{n:"1 fehérje croissant",p:7.5,c:3,f:11,k:168,ing:"1 db GymBeam-protein croissant",el:"Készen kapható, csomagolásból azonnal fogyasztható."},
+{n:"Körte + mandula",p:4,c:20,f:10,k:180,ing:"1 db körte, 15 g mandula",el:"Mosd meg a körtét, és fogyaszd a mandulával együtt."},
+{n:"Raffaello Protein Golyók",p:17,c:12,f:12,k:250,ing:"15 g zabpehely, 15 g vaníliás fehérjepor, 10 g mogyoróvaj, 10 g kókuszreszelék, mandulaaroma, kókuszreszelék forgatáshoz",el:"A zabpelyhet keverd össze a fehérjeporral és a mogyoróvajjal, add hozzá a kókuszreszeléket és a mandulaaromát. Csepegtess hozzá kevés folyadékot, hogy összeálljon. Formázz belőle 4-5 golyót, forgasd meg kókuszreszelékben, és tedd hűtőbe legalább 1 órára."},
+{n:"Fagyasztott Joghurt Falatok",p:16,c:12,f:6,k:180,ing:"120 g görög joghurt, 50 g eper, 5 g étcsoki",el:"Az epret vágd kisebb darabokra, keverd össze a joghurttal. Kanalazd kis halmokba sütőpapírra, szórd meg apróra tört étcsokival, majd fagyaszd 1-2 órára."},
+{n:"Kókuszos Mangó Smoothie",p:21,c:22,f:5,k:230,ing:"100 g mangó, 200 ml cukormentes kókuszital, 20 g vaníliás fehérje, jégkocka",el:"Az összes hozzávalót turmixold össze. Jól behűtve add tálald, egy csepp GymBeam kókusz aroma még finomabbá teszi."},
+{n:"Sajtos Perec",p:31,c:21,f:9,k:295,ing:"100 g zsírszegény túró, 25 g zabliszt, 1 tojás, 20 g light reszelt sajt, 1/2 tk sütőpor, csipet só",el:"A túrót keverd össze a tojással, add hozzá a zabliszetet, a sütőport és a sót, keverd össze masszává. Formázz belőle perec alakot, helyezd sütőpapírra, majd 180°C-ra előmelegített sütőben süsd 20-25 percig, szép aranybarnára. Még finomabb, ha a tésztába kevés szezám- vagy köménymagot is szórsz."},
+{n:"Gránátalmás saláta sonkával (Challenge, hétfő tízórai)",p:16.9,c:17.1,f:6.9,k:198,ing:"60 g csirkemell- vagy pulykamellsonka, 50 g gránátalma, 80 g zöldsaláta, 100 g kígyóuborka, 20 g light feta sajt, 2 ml olívaolaj, citromlé",el:"A zöldsalátát, uborkát és gránátalmamagokat keverd össze egy tálban. Add hozzá a felcsíkozott sonkát és a morzsolt feta sajtot. Locsold meg olívaolajjal és citromlével."},
+{n:"Csirkemellsonka, light mozzarella, paradicsom, kenyér (Challenge, kedd tízórai)",p:27.1,c:24.8,f:11.7,k:312,ing:"50 g csirkemell- vagy pulykamellsonka, 50 g light mozzarella, 150 g paradicsom, 1,5 szelet teljes kiőrlésű toast kenyér, 2 ml olívaolaj, bors, bazsalikom",el:"A kenyérszeletekre helyezd a sonkát, a szeletelt mozzarellát és a paradicsomot. Csepegtess rá olívaolajat, szórd meg bazsalikommal és borssal."},
+{n:"Zöldség snack (Challenge, szerda tízórai)",p:1.6,c:11.2,f:0.3,k:54,ing:"200 g zöldség snack (kígyóuborka, répa, angolzeller)",el:"A zöldségeket mosd meg, hámozd meg, majd vágd hasábokra vagy rágcsálható formára. Önmagában vagy egy kevés humusszal is fogyasztható."},
+{n:"Humusz zöldség snackkel (Challenge, csütörtök tízórai)",p:6.2,c:18.7,f:6.0,k:154,ing:"60 g humusz, 180 g zöldség snack (kígyóuborka, répa, angolzeller)",el:"A zöldségeket vágd hasábokra, majd mártogasd a humuszba."},
+{n:"Csirkemellsonka, friss zöldség, kenyér, mozzarella (Challenge, péntek tízórai)",p:25.1,c:25.5,f:8.3,k:277,ing:"50 g csirkemell- vagy pulykamellsonka, 160 g friss zöldségek, 1,5 szelet teljes kiőrlésű toast kenyér, 40 g light mozzarella",el:"Készíts egyszerű szendvicset a kenyérből, sonkából és mozzarellából, friss zöldségekkel kiegészítve."},
+{n:"Málna és áfonya, túróval, joghurttal (Challenge, szombat tízórai)",p:26.0,c:19.6,f:2.1,k:201,ing:"120 g málna és áfonya, 120 g zsírszegény túró, 40 g natúr görög joghurt (2%-os), fahéj, vanília",el:"A túrót keverd össze a görög joghurttal krémesre, ízesítsd fahéjjal és vaníliával. Tálald a málnával és áfonyával."},
+{n:"Túrókrémes-zöldséges szendvics (Challenge, vasárnap tízórai)",p:29.3,c:25.1,f:7.7,k:287,ing:"1 db főtt tojás, 80 g zsírszegény túró, 1,5 szelet teljes kiőrlésű toast kenyér, 20 g natúr görög joghurt (2%-os), 120 g friss zöldségek (retek, uborka), só, bors, snidling, fűszerpaprika",el:"A tojást főzd keményre, majd törd össze. A túrót a joghurttal keverd krémesre, add hozzá a tojást és a fűszereket. A kenyeret kend meg a krémmel, és friss zöldségekkel fogyaszd."}
+],
+ebed: [
+{n:"Fitt bolognai spagetti",p:40,c:40,f:10,k:460,ing:"40 g száraz spagetti, 150 g darált pulykahús, 100 g paradicsomszósz",el:"Főzd ki a spagettit kissé sósvízben. A darált pulykahúst pirítsd meg egy serpenyőben, majd add hozzá a paradicsomszószt, és fűszerezd. Forrald össze pár percig, majd keverd a kifőtt tésztával."},
+{n:"Grillezett csirkemell + rizs + savanyú uborka",p:40,c:35,f:8,k:450,ing:"150 g csirkemell, 40 g rizs (szárazon mérve), 150 g savanyú uborka, zöldség, fűszerek",el:"A rizst főzd meg sós vízben a csomagolás szerint. A csirkemellet fűszerezd, majd egy grillserpenyőben süsd meg mindkét oldalát 5-6 percig. Tálald a rizzsel és a savanyú uborkával, ízlés szerint friss zöldséggel."},
+{n:"Csirkemáj hagymával, burgonyával (magyaros)",p:35,c:35,f:18,k:400,ing:"130 g csirkemáj, 150 g burgonya, 50 g vöröshagyma, 100 g savanyúság, 1 tk olaj, só, bors, pirospaprika",el:"A burgonyát főzd meg héjastól sós vízben, majd hámozd meg és karikázd fel. A vöröshagymát aprítsd fel, üvegesre pirítsd, majd add hozzá a csirkemájat. Fűszerezd pirospaprikával, sóval, borssal, és pirítsd 8-10 percig. Tálald a főtt burgonyával és a savanyúsággal."},
+{n:"Sült csirkecomb + burgonya + savanyúság",p:35,c:35,f:15,k:500,ing:"1 közepes csirkecomb (200 g nyersen), 150 g burgonya, 100 g savanyúság, fűszerek (só, bors, paprika, fokhagyma)",el:"A csirkecombot fűszerezd (só, bors, paprika, fokhagyma), majd 180°C-os sütőben süsd 35-40 percig, amíg szép ropogósra sül. A burgonyát hámozd meg, főzd vagy süsd meg köretnek. Tálald savanyúsággal."},
+{n:"Pörköltös Zúza Tál",p:34,c:33,f:9,k:410,ing:"150 g tisztított csirkezúza, 150 g burgonya, 50 g vöröshagyma, 1 tk pirospaprika, 1 tk paradicsompüré, só, bors, petrezselyem",el:"A vöröshagymát dinszteld meg kevés olajon. Vedd le a tűzről, add hozzá a pirospaprikát és a paradicsompürét, majd öntsd vissza a tűzre. Add hozzá a megtisztított csirkezúzát, öntsd fel kevés vízzel, és pároltad puhára, fedő alatt. A burgonyát főzd meg köretnek. Kóréd: savanyú uborka."},
+{n:"Csirkés cézár saláta (light)",p:35,c:10,f:18,k:400,ing:"120 g csirkemell, 100 g saláta mix, 20 g light sajt, 50 g görög joghurt, fokhagyma, citromlé",el:"A csirkemellet süsd meg serpenyőben vagy sütőben, majd szeleteld fel. A görög joghurtot keverd össze fokhagymával és citromlével, ez lesz az öntet. A salátamixet tedd tálba, tedd rá a csirkét és a reszelt light sajtot, majd locsold meg az öntettel."},
+{n:"Sült hal + édesburgonya + párolt zöldség",p:30,c:35,f:6,k:315,ing:"150 g hal (hekk, tőkehal), 150 g édesburgonya, 150–200 g zöldség, citromlé, só, bors, fűszerek",el:"Az édesburgonyát hámozd meg, kockázd fel, és 200°C-os sütőben süsd 20-25 percig. A halat sózd, borsozd, majd süsd meg serpenyőben vagy sütőben 5-6 percig oldalanként. A zöldséget párold puhára. Tálald együtt, és locsold meg citromlével."},
+{n:"Töltött édesburgonya pulykahússal",p:38,c:40,f:10,k:400,ing:"200 g édesburgonya, 120 g alacsony zsírtartalmú darált pulykahús, 50 g görög joghurt, 20 g light sajt, zöldség, só, bors, fűszerek",el:"Az édesburgonyát mosd meg, és héjastól süsd meg 180°C-on 35-40 percig. A darált pulykahúst pirítsd meg a zöldséggel, fűszerezd. A megsült édesburgonyát vágd félbe, kanalazd ki kicsit a belsejét, töltsd meg a pulykahússal és a görög joghurttal, szórd meg sajttal, majd tedd vissza a sütőbe 5 percre."},
+{n:"Töltött Cukkini Fitness Verzió",p:39,c:16,f:13,k:360,ing:"1 közepes cukkini (kb. 250 g), 120 g darált pulykahús, 50 g passzírozott paradicsom, 20 g light sajt, 30 g vöröshagyma, 1 gerezd fokhagyma, só, bors, oregánó, bazsalikom",el:"A cukkinit vágd félbe hosszában, kanállal vájd ki a közepét, majd süsd elő 5 percig. A darált pulykahúst pirítsd meg a hagymával és a fokhagymával, keverd össze a paradicsommal. Töltsd meg vele a cukkinit, szórd meg sajttal, és 180°C-on süsd 20-25 percig, amíg a sajt megpirul."},
+{n:"Gyros tál (diétás verzió)",p:35,c:40,f:11,k:475,ing:"140 g csirkemell, 150 g burgonya vagy édesburgonya, 150 g zöldség, 50 g görög joghurt, 1 gerezd fokhagyma, citromlé, gyros fűszer, só, bors",el:"A burgonyát vagy édesburgonyát vágd kockára, fűszerezd, és 180°C-on süsd 20-25 percig. A csirkemellet fűszerezd gyros fűszerkeverékkel, majd süsd meg grillserpenyőben, szeleteld fel. Készíts joghurtos szószt fokhagymával és citromlével. Tálald együtt a zöldségekkel."},
+{n:"Csirkés Quesadilla",p:40,c:35,f:14,k:460,ing:"1 db tortilla lap (50 g), 120 g csirkemell, 25 g light sajt, 50 g paprika, 30 g vöröshagyma, só, bors, fokhagymapor",el:"A csirkemellet kockázd fel, fűszerezd, és pirítsd meg serpenyőben. A tortilla egyik felére tedd a csirkét, a paprikát, a hagymát és a sajtot, hajtsd rá a másik felét. Serpenyőben vagy airfryerben süsd 2-3 percig oldalanként, amíg a sajt megolvad."},
+{n:"Sütőben Sült Pulykafasírt Zöldborsófőzelékkel",p:43,c:34,f:15,k:460,ing:"Fasírt: 150 g darált pulykahús, 1/2 tojás, 10 g zabpehely, fokhagyma, só, bors. Főzelék: 250 g zöldborsó, 100 ml tej, 5 g liszt, kapor",el:"A fasírt hozzávalóit keverd össze, formázz belőle kisebb fasírtokat, majd 180°C-on süsd 25 percig. Közben a zöldborsót főzd meg, készíts hozzá könnyű habarást tejből és lisztből, ízesítsd kaporral."},
+{n:"Krémes Csirkés Tészta",p:39,c:38,f:13,k:420,ing:"120 g csirkemell, 50 g durum tészta (szárazon), 120 g Skyr, 2 gerezd fokhagyma, só, bors",el:"Főzd ki a tésztát. A csirkemellet kockázd fel, pirítsd meg a fokhagymával. Add hozzá a Skyrt, és csak melegítsd át (ne forrald), hogy krémes maradjon. Forgasd össze a kifőtt tésztával."},
+{n:"Rakott Karfiol Fitness Verzió",p:39,c:22,f:17,k:420,ing:"250 g karfiol, 120 g darált pulykahús, 80 g görög joghurt, 20 g light sajt, só, bors",el:"A karfiolt főzd elő 5-8 percig sós vízben. A darált pulykahúst pirítsd meg. Egy sütőtálban rétegezd a karfiolt és a húst, kend meg görög joghurttal, szórd meg sajttal. 180°C-on süsd 20 percig, amíg a teteje megpirul."},
+{n:"Fokhagymás Garnéla Rizzsel",p:42,c:42,f:2,k:350,ing:"160 g garnéla, 50 g rizs (szárazon), 2 gerezd fokhagyma, citromlé, petrezselyem",el:"Főzd meg a rizst sós vízben. A garnélát fokhagymával pirítsd meg egy serpenyőben 3-4 perc alatt, majd csavarj rá citromlevet. Szórd meg petrezselyemmel, és tálald a rizzsel."},
+{n:"Csirkepaprikás Teljes Kiőrlésű Tésztával",p:42,c:31,f:9,k:390,ing:"120 g csirkemell, 40 g teljes kiőrlésű tészta (szárazon), 50 g vöröshagyma, 1 tk pirospaprika, 80 g zsírszegény görög joghurt, só, bors",el:"A vöröshagymát aprítsd fel, üvegesre pirítsd, majd vedd le a tűzről, és keverd bele a pirospaprikát. Add hozzá a felkockázott csirkemellet, önts hozzá kevés vizet, és fedő alatt pároltad puhára. A végén keverj bele görög joghurtot. Tálald a kifőtt teljes kiőrlésű tésztával."},
+{n:"Big Mac Tál",p:38,c:28,f:10,k:390,ing:"120 g 5%-os darált pulykahús, 150 g burgonya, 80 g jégsaláta, 50 g paradicsom, 50 g csemegeuborka, 50 g görög joghurt, 1 tk mustár, só, bors, fokhagymapor, pirospaprika",el:"A burgonyát vágd hasábokra, és süsd meg sütőben vagy airfryerben. A darált pulykahúst formázz kis pogácsákra, fűszerezd, és süsd meg serpenyőben. A jégsalátát vágd csíkokra, a paradicsomot és a csemegeuborkát szeleteld. A görög joghurtot keverd össze mustárral és fűszerekkel, ez lesz az öntet. Rendezd össze egy tálban, és locsold meg az öntettel."},
+{n:"Rakott Burgonya Fitness Verzió",p:31,c:28,f:12,k:360,ing:"150 g burgonya, 1 tojás, 60 g csirkemellsonka, 70 g zsírszegény görög joghurt, 15 g light sajt, só, bors",el:"A burgonyát főzd meg héjastól, hűtsd ki, majd karikázd fel. A tojást főzd keményre, és szintén karikázd fel. Egy sütőtálba rétegezd a burgonyát, a tojást és a csirkemellsonkát, kend meg görög joghurttal, szórd meg light sajttal. 180°C-on süsd 20-25 percig, amíg a sajt megpirul."},
+{n:"Parmezános Csirkemell Édesburgonya Pürével",p:34,c:32,f:10,k:395,ing:"120 g csirkemell, 180 g édesburgonya, 10 g parmezán sajt, 50 g görög joghurt, só, bors, fokhagymapor",el:"Az édesburgonyát hámozd meg, kockázd fel, és főzd puhára 15-20 perc alatt. A csirkemellet fűszerezd sóval, borssal és fokhagymaporral, majd süsd meg serpenyőben mindkét oldalát 5-6 percig, aranybarnára. A megfőtt édesburgonyát öntsd le, pürésítsd, add hozzá a görög joghurtot és egy kevés fokhagymaport. Tálald a csirkemellel, tetejére szórj parmezánt."},
+{n:"Magyaros Zöldbableves",p:30,c:18,f:6,k:280,ing:"250 g zöldbab, 80 g csirkemell, 50 g zsírszegény görög joghurt, 1 gerezd fokhagyma, 1 tk pirospaprika, 500 ml víz, só, bors, petrezselyem",el:"A csirkemellet kockázd fel, a zöldbabot tisztítsd meg és vágd darabokra. Add össze egy lábosban, öntsd fel vízzel, fűszerezd pirospaprikával és fokhagymával, majd főzd 15-20 percig. A végén keverj bele egy kevés görög joghurtos habarást, és friss petrezselyemmel tálald."},
+,
+{n:"Padlizsános paradicsomos csirkeragu, jázminrizs (Challenge, hétfő)",p:46.5,c:64.2,f:8.5,k:519,ing:"120 g csirkemellfilé, 40 g jázminrizs (szárazon), 120 g padlizsán, 100 g paradicsompüré, 60 g koktélparadicsom, 40 g vöröshagyma, 3 ml olívaolaj, só, bors, fokhagyma, oregánó, bazsalikom",el:"Az apróra vágott vöröshagymát kevés olívaolajon párold üvegesre. Add hozzá a kockára vágott csirkemellfilét, fűszerezd sóval, borssal, fokhagymával, pirítsd le. Add hozzá a kockára vágott padlizsánt, közepes lángon 5-6 percig pirítsd, míg meg nem puhul és enyhén karamellizálódik. Öntsd fel a paradicsompürével, add hozzá a félbevágott koktélparadicsomot. Fűszerezd bazsalikommal, oregánóval, fedő alatt főzd 10 percig. Főtt jázminrizzsel tálald."},
+{n:"Grillezett csirkemell, ratatouille, bulgur (Challenge, hétfő)",p:45.5,c:47.4,f:10.6,k:467,ing:"120 g csirkemellfilé, 40 g bulgur (szárazon), 100 g padlizsán, 80 g cukkini, 70 g paradicsom, 50 g kaliforniai paprika, 30 g vöröshagyma, 5 ml olívaolaj, só, bors, fokhagyma, kakukkfű, oregánó, bazsalikom",el:"A bulgurt kétszeres mennyiségű enyhén sós vízben főzd puhára kb. 12-15 perc alatt, majd lefedve hagyd állni. Vöröshagymát olívaolajon párold üvegesre, add hozzá a padlizsánt, majd a cukkinit és a paprikát, párold pár percig. Add hozzá a paradicsomot, fűszerezd, fedő alatt főzd 10 percig ragu állagúra. Egy másik serpenyőben a csíkokra vágott csirkemellet süsd meg. A ragut keverd össze a bulgurral, tálald a csirkemellcsíkokkal."},
+{n:"Mediterrán csicseriborsó saláta, cottage cheese (vegetáriánus, hétfő)",p:19.6,c:33.6,f:9.9,k:302,ing:"70 g csicseriborsó konzerv, 100 g cottage cheese, 100 g cukkini, 50 g kaliforniai paprika, 50 g kígyóuborka, 80 g koktélparadicsom, 30 g rukkola, 20 g lilahagyma, 10 ml citromlé, 3 ml olívaolaj, só, bors, oregánó, bazsalikom",el:"A cukkinit és a paprikát nagyobb darabokra vágva, kevés olívaolajjal meglocsolva 180°C-os sütőben 15-20 perc alatt enyhén süsd meg. A csicseriborsót öblítsd le. A felaprított uborkát, koktélparadicsomot, lilahagymát, a rukkolát, a sült zöldségeket és a csicseriborsót keverd össze egy tálban. Add hozzá a cottage cheese-t, ízesítsd citromlével, olívaolajjal, sóval, borssal, zöldfűszerekkel. Fogyasztás előtt pihentesd pár percig."},
+{n:"Thai szezámmagos-zöldséges csirkeragu, basmati rizs (Challenge, kedd)",p:49.2,c:55.2,f:12.9,k:534,ing:"120 g csirkemellfilé, 40 g basmati rizs (szárazon), 120 g cukkini, 80 g sárgarépa, 60 g kaliforniai paprika, 30 g lilahagyma, 40 g edamame bab, 10 ml szójaszósz, 5 ml limelé, 2 ml olívaolaj, 2 ml szezámolaj, 3 g szezámmag, só, fokhagyma, koriander vagy petrezselyem, gyömbér",el:"A csirkemellet vágd vékony csíkokra, a zöldségeket csíkokra/karikákra. Egy wokot erősen hevíts fel, öntsd bele az olívaolajat és a szezámolajat, majd magas hőfokon pirítsd le a csirkecsíkokat. Add hozzá a lilahagymát, fokhagymát, gyömbért, majd a sárgarépát, paprikát és cukkinit — süsd, míg roppanósak maradnak. Add hozzá a főtt edamame babot, ízesítsd szójaszósszal és limelével. Basmati rizzsel, szezámmaggal és friss zöldfűszerekkel tálald."},
+{n:"Mustáros-joghurtos csirkemell, sült burgonya, friss káposztasaláta (Challenge, kedd)",p:46.0,c:37.8,f:9.1,k:417,ing:"120 g csirkemellfilé, 120 g burgonya, 160 g fejes káposzta, 40 g sárgarépa, 50 g kígyóuborka, 10 g mustár, 40 g natúr görög joghurt, 3 ml olívaolaj, 10 ml almaecet, só, bors, fokhagyma, fűszerpaprika, rozmaring, petrezselyem, citromlé",el:"A mustárt, a görög joghurtot, a zúzott fokhagymát, az olívaolaj 2/3-át, sót és borsot keverd össze, forgasd bele a felcsíkozott csirkemellet, 20-30 percig pihentesd hűtőben. A burgonyát vágd hasábokra, fűszerezd fűszerpaprikával, sóval, rozmaringgal, 190°C-on süsd 25-30 percig aranybarnára. A pácolt csirkemellet serpenyőben süsd készre. A káposztát gyaluld vékonyra, reszeld a répát, csíkozd az uborkát, forgasd össze almaecettel, olívaolajjal, citromlével, sóval, borssal."},
+{n:"Grillezett sajt, jázminrizs, mediterrán saláta (vegetáriánus, kedd)",p:29.5,c:47.0,f:26.2,k:542,ing:"50 g grillsajt, 2 db főtt tojás, 40 g jázminrizs (szárazon), 120 g paradicsom, 100 g kígyóuborka, 50 g rukkola, 30 g lilahagyma, 10 ml citromlé, 3 ml olívaolaj, só, bors, oregánó, bazsalikom",el:"Főzd meg a rizst. A paradicsomot kockázd fel, az uborkát félkarikára, a lilahagymát vékony szeletekre. A rukkolát, a zöldségeket és a rizst tálban keverd össze, öntettel (olívaolaj, citromlé, oregánó, bazsalikom) forgasd át. Helyezd rá a serpenyőben megsütött grillsajtot és a felszeletelt főtt tojásokat."},
+{n:"Grillezett pulykanyárs, petrezselymes kuszkusz, citrusos saláta (Challenge, szerda)",p:37.4,c:47.6,f:5.8,k:392,ing:"120 g pulykamellfilé, 40 g kuszkusz (szárazon), 90 g cukkini, 70 g kaliforniai paprika, 80 g koktélparadicsom, 50 g kígyóuborka, 10 g rukkola, 40 g lilahagyma, 3 ml olívaolaj, 10 ml citromlé, só, bors, fokhagyma, petrezselyem, oregánó, kakukkfű",el:"Az olívaolaj 2/3-át, fokhagymát, citromlevet, sót, borsot, zöldfűszereket keverd össze, forgasd bele a felkockázott pulykamellet, pihentesd 15-20 percig. A cukkinit, paprikát, lilahagymát vágd nagyobb darabokra, a hússal felváltva húzd nyársra, süsd 180°C-on sütőben. A kuszkuszt forró, sós vízzel öntsd le, hagyd állni, majd citromlével, petrezselyemmel ízesítsd. A paradicsomot és uborkát kockázd, keverd a rukkolával, öntettel locsold meg."},
+{n:"Cukkinis csirkeragu, basmati rizs (Challenge, szerda)",p:43.5,c:45.4,f:8.4,k:431,ing:"120 g csirkemellfilé, 40 g basmati rizs (szárazon), 160 g cukkini, 120 g paradicsom, 40 g vöröshagyma, 3 ml olívaolaj, só, bors, fokhagyma, bazsalikom",el:"A vöröshagymát olívaolajon párold üvegesre. Add hozzá a kockára vágott csirkemellet, pirítsd le, fűszerezd sóval, borssal, fokhagymával, bazsalikommal. Add hozzá a kockára vágott cukkinit és paradicsomot, alacsony hőfokon pirítsd, míg a zöldségek meg nem puhulnak. Főtt basmati rizzsel tálald."},
+{n:"Csicseriborsós tabbouleh, cottage cheese (vegetáriánus, szerda)",p:22.5,c:57.4,f:6.8,k:381,ing:"100 g cottage cheese, 40 g bulgur (szárazon), 60 g csicseriborsó konzerv, 150 g paradicsom, 120 g kígyóuborka, só, bors, citromlé, petrezselyem",el:"A bulgurt kétszeres mennyiségű enyhén sós vízben főzd puhára, majd lefedve hagyd állni. A paradicsomot és uborkát vágd apró kockákra. A bulgurt keverd össze a leszűrt csicseriborsóval, a zöldségekkel, a cottage cheese-zel, petrezselyemmel és citromlével, ízlés szerint sózva, borsozva."},
+{n:"Paradicsomos mozzarellás csirkemell, petrezselymes burgonya (Challenge, csütörtök)",p:49.8,c:27.4,f:13.3,k:429,ing:"120 g csirkemellfilé, 120 g burgonya, 150 g paradicsom, 40 g light mozzarella, 3 ml olívaolaj, só, bors, bazsalikom, petrezselyem",el:"A vékonyra vágott csirkemell szeleteket kevés olívaolajon süsd meg, fűszerezd sóval, borssal. A paradicsomot és mozzarellát vágd szeletekre, tedd a csirkemellre, alacsony hőfokon fedő alatt süsd tovább, míg a sajt kissé megolvad. Szórd meg bazsalikommal. Főtt, petrezselymes burgonyával tálald."},
+{n:"Zöldbabos csirkeragu, petrezselymes burgonya (Challenge, csütörtök)",p:44.2,c:40.6,f:7.9,k:410,ing:"120 g csirkemellfilé, 120 g újburgonya, 180 g zöldbab, 100 g paradicsom, 40 g vöröshagyma, 3 ml olívaolaj, só, bors, fokhagyma, fűszerpaprika, petrezselyem",el:"A vöröshagymát olívaolajon párold üvegesre. Add hozzá a kockára vágott csirkemellet, pirítsd le. Add hozzá a zöldbabot és a paradicsomot, fűszerezd fűszerpaprikával, sóval, borssal, fokhagymával. Önts rá kevés vizet, fedő alatt párold puhára kb. 15 percig. Szórd meg petrezselyemmel. Főtt, petrezselymes burgonyával tálald."},
+{n:"Burgonyás zöldségtál, feta sajt, cottage cheese (vegetáriánus, csütörtök)",p:22.7,c:41.5,f:13.9,k:382,ing:"100 g cottage cheese, 40 g light feta sajt, 120 g újburgonya, 120 g cukkini, 120 g kaliforniai paprika, 40 g lilahagyma, 40 g rukkola, 3 ml olívaolaj, 10 ml citromlé, só, bors, oregánó, kakukkfű, bazsalikom",el:"Az újburgonyát, cukkinit, paprikát, lilahagymát vágd fel, tedd sütőpapíros tepsibe, locsold meg olívaolajjal, fűszerezd, 180°C-on süsd aranybarnára kb. 25-30 perc alatt. A rukkolát a sült zöldségekkel keverd össze, morzsold rá a feta sajtot és a cottage cheese-t, citromlével ízesítsd."},
+{n:"Grillezett csirkemell, paradicsomos zöldségragu, jázminrizs (Challenge, péntek)",p:43.1,c:49.1,f:8.2,k:443,ing:"120 g csirkemellfilé, 40 g jázminrizs (szárazon), 140 g padlizsán, 40 g angolzeller, 120 g paradicsom, 30 g vöröshagyma, kevés olívaolaj, só, bors, fokhagyma, kakukkfű, rozmaring",el:"A vöröshagymát olívaolajon párold üvegesre. Add hozzá a padlizsánt, közepes lángon pirítsd, míg meg nem puhul és enyhén karamellizálódik. Add hozzá a zellert és a paradicsomot, fűszerezd, közepes hőfokon főzd, míg raguszerű nem lesz. A húst sózd, borsozd, kevés olívaolajon süsd meg. A főtt rizst a zöldségraguval és a grillezett csirkemellel tálald."},
+{n:"Töltött padlizsán (Challenge, péntek)",p:35.6,c:38.8,f:16.0,k:442,ing:"120 g darált marhahús, 35 g vöröslencse (szárazon), 180 g padlizsán, 120 g paradicsom, 25 g vöröshagyma, 3 ml olívaolaj, só, bors, fokhagyma",el:"A padlizsánt hosszában vágd ketté, a belsejét vájd ki, enyhén sózd meg. A vöröshagymát olívaolajon párold üvegesre, add hozzá a darált húst, fűszerezd. Ha lepirult, add hozzá az átöblített vöröslencsét, a padlizsán kivájt belsejét és a paradicsomot. A ragut töltsd a padlizsáncsónakokba, alufóliával lefedve 180°C-os sütőben süsd készre."},
+{n:"Grillezett zöldség, bulgur, feta sajt (vegetáriánus, péntek)",p:15.6,c:49.8,f:11.4,k:364,ing:"50 g light feta sajt, 40 g bulgur (szárazon), 120 g padlizsán, 120 g cukkini, 70 g kaliforniai paprika, 30 g lilahagyma, 3 ml olívaolaj, só, bors, oregánó, rozmaring",el:"A bulgurt kétszeres mennyiségű enyhén sós vízben főzd puhára, hagyd állni lefedve. A padlizsánt, cukkinit, paprikát, lilahagymát tedd sütőpapíros tepsibe, sózd, borsozd, locsold meg olívaolajjal, 180°C-on süsd meg 15-20 perc alatt. A zöldségeket keverd össze a bulgurral, morzsold rá a feta sajtot, citromlével és zöldfűszerekkel ízesítsd."},
+{n:"Kapros tökfőzelék, pulykaragu (Challenge, szombat)",p:38.5,c:17.4,f:9.5,k:309,ing:"120 g pulykamellfilé, 290 g gyalult tök, 60 g vöröshagyma, 70 g natúr görög joghurt, 5 ml olívaolaj, só, bors, fokhagyma, ecet, őrölt kömény, kapor, fűszerpaprika",el:"A vöröshagyma 2/3-át párold üvegesre, add hozzá a gyalult tököt, önts rá kevés vizet, fedő alatt párold puhára. A tök egy részét pürésítsd, keverd hozzá a joghurtot, öntsd vissza a főzelékhez, ízesítsd kaporral, ecettel. Egy serpenyőben a maradék hagymát párold, add hozzá a fűszerpaprikát és a kockára vágott pulykamellfilét, fűszerezd köménnyel, pirítsd le, kevés vízzel fedő alatt főzd készre. A tökfőzelékkel tálald."},
+{n:"Zöldbabfőzelék, pulykafasírt (Challenge, szombat)",p:43.0,c:36.2,f:20.9,k:505,ing:"120 g darált pulykamell, 15 g zabpehely, 1 db tojás, 250 g zöldbab, 60 g vöröshagyma, 70 g natúr görög joghurt, 3 ml olívaolaj, só, bors, fokhagyma, fűszerpaprika, babérlevél, petrezselyem, ecet",el:"A vöröshagyma 2/3-át párold üvegesre, add hozzá a zöldbabot, babérlevelet, kevés vízzel fedő alatt párold puhára. Egy részét pürésítsd, keverd hozzá a joghurtot, öntsd vissza, ecettel ízesítsd. A darált húst fűszerezd, add hozzá a fűszerpaprikát, tojást, maradék hagymát és zabpelyhet. Formázz kis tallérokat, sütőpapíron 180°C-on süsd aranybarnára. A főzelékkel tálald."},
+{n:"Borsófőzelék, tükörtojás (vegetáriánus, szombat)",p:32.5,c:41.0,f:16.0,k:438,ing:"2 db tojás, 250 g zöldborsó, 30 g vöröshagyma, 60 g natúr görög joghurt, 3 ml olívaolaj, só, bors, petrezselyem",el:"A vöröshagymát olívaolajon párold üvegesre, add hozzá a zöldborsót, kevés vízzel fedő alatt párold puhára. Egy részét pürésítsd, keverd hozzá a joghurtot, öntsd vissza a főzelékhez, petrezselyemmel ízesítsd. Tükörtojással tálald."}
+],
+uzsonna: [
+{n:"Joghurtos desszert pohár",p:18,c:18,f:8,k:220,ing:"150 g görög joghurt, 50 g gyümölcs, 10 g mogyoróvaj",el:"A görög joghurtot, a gyümölcsöt és a mogyoróvajat rétegezd egy pohárba."},
+{n:"Sós túrókrém pirítóssal",p:22,c:25,f:8,k:260,ing:"150 g túró, 1 szelet teljes kiőrlésű kenyér, só, bors",el:"A túrót keverd össze sóval és borssal krémesre, majd kend a megpirított kenyérszeletre."},
+{n:"Protein \u201EKinder bueno\u201D krém",p:28,c:18,f:10,k:280,ing:"150 g túró, 20 g vaníliás fehérjepor, 10 g mogyoróvaj, 3 db Korpovit keksz",el:"A túrót keverd össze a fehérjeporral krémesre, add hozzá a mogyoróvajat. Morzsold rá a Korpovit kekszet."},
+{n:"Cukormentes Skyr sajttorta",p:16,c:12,f:4,k:150,ing:"125 g natúr Skyr, 1 tojás, 5 g édesítő, 8 g zabkorpa, 30–40 g bogyós gyümölcs",el:"A tojást válaszd szét sárgájára és fehérjére. A sárgáját keverd össze a Skyrrel, az édesítővel és a zabkorpával. A fehérjét verd fel kemény habbá, és óvatosan forgasd a masszába. Öntsd egy kis sütőformába, és 180°C-on süsd 20-25 percig. Fontos, hogy teljesen kihűljön sütés után, mielőtt a gyümölcsöt ráteszed."},
+{n:"Karamellás protein pohárdesszert",p:24,c:20,f:9,k:260,ing:"150 g görög joghurt/Skyr, 20 g fehérjepor, 10 g mogyoróvaj, 1 db Korpovit keksz, 10–15 g kalóriamentes karamell szirup",el:"A görög joghurtot vagy Skyrt keverd össze a fehérjeporral és a mogyoróvajjal krémesre. A Korpovit kekszet morzsold a pohár aljára, kanalazd rá a krémet, majd locsold meg kalóriamentes karamell sziruppal."},
+{n:"Protein tiramisu",p:25,c:18,f:6,k:260,ing:"125 g Skyr/görög joghurt, 1 tojás, 20 g vaníliás fehérjepor, 30 g zabliszt, 50 ml kávé, 5 g kakaópor, édesítő",el:"A Skyrt vagy görög joghurtot keverd össze a tojással, a fehérjeporral és a zablisztel. Öntsd egy kis sütőformába, és 180°C-on süsd 20-25 percig. Amikor kihűlt, szurkáld meg és itasd át a kávéval, majd szórd meg kakaóporral. Hűtőben állva, másnapra még jobban összeérnek az ízek."},
+{n:"Alma + olajos mag",p:4,c:22,f:8,k:180,ing:"1 közepes alma (150 g), 15 g natúr mandula/kesudió",el:"Az almát mosd meg, szeleteld fel, és fogyaszd az olajos maggal együtt."},
+{n:"Protein shake",p:22,c:2,f:1,k:120,ing:"25 g fehérjepor, 250 ml víz vagy mandulatej",el:"Tedd shakerbe a fehérjeport és a folyadékot, zárd le, és rázd össze 10-15 másodpercig, amíg habos nem lesz."},
+{n:"Diétás túrórúdi",p:28,c:12,f:15,k:300,ing:"Töltelék: 150 g túró, 10 g vaníliás fehérjepor, édesítő, citromlé. Bevonat: 20 g cukormentes étcsoki, 5 g kókuszolaj",el:"A töltelék hozzávalóit keverd össze krémesre, formázz belőle 2-3 rudacskát, és tedd a fagyasztóba, hogy megkeményedjen. Az étcsokit olvaszd meg a kókuszolajjal, mártsd bele a rudacskákat, majd hűtsd vissza 10-15 percre."},
+{n:"Jeges kávés protein shake",p:25,c:23,f:8,k:280,ing:"25 g fehérjepor, 100 ml lefőzött kávé (lehűtve), 100 ml mandulatej, 4–5 jégkocka",el:"Az összes hozzávalót turmixold össze, amíg habos nem lesz."},
+{n:"Rice Cake Mogyoróvajjal",p:6,c:15,f:11,k:190,ing:"2 db puffasztott rizsszelet, 15 g mogyoróvaj",el:"Kend meg a puffasztott rizsszeleteket mogyoróvajjal. Ha valami ropogósra vágysz, tökéletes, gyors választás."},
+{n:"Protein Fahéjas Tortilla Csiga",p:31,c:30,f:7,k:320,ing:"1 tortilla lap, 20 g vaníliás fehérjepor, 1 tk fahéj, 1 evőkanál görög joghurt, édesítő",el:"Keverd össze a vaníliás fehérjeport a fahéjjal és a görög joghurttal, kend el egyenletesen a tortillán. Tekerd fel szorosan, majd 180°C-on süsd 8-10 percig, amíg ropogós lesz."},
+{n:"Anett Kedvenc Banán Pudingja",p:19,c:28,f:4,k:240,ing:"100 g vaníliás fehérje puding, 50 g sovány krémtúró, csipet só, 1/2 banán (50 g), 4 db cukormentes keksz",el:"Keverd össze a fehérje pudingot a krémtúróval és egy csipet sóval. A fél banánt vágd kis darabokra, és keverd bele. Öntsd egy pohárba, tedd hűtőbe legalább 2-3 órára, amíg besűrűsödik. Tálalás előtt szórd meg a maradék morzsolt keksszel."},
+{n:"Cottage cheese + ananász",p:14,c:16,f:4,k:165,ing:"100 g cottage cheese, 100 g ananász",el:"Keverd össze a cottage cheese-t az ananásszal, ez az egyik legfinomabb édes-sós kombináció."},
+{n:"Mini Snickers Tál",p:15,c:9,f:9,k:185,ing:"100 g Skyr, 10 g mogyoróvaj, 5 g étcsoki",el:"A Skyrt keverd össze a mogyoróvajjal, öntsd egy tálkába, és reszelj vagy csepegtess rá étcsokit."},
+{n:"Sós Karamellás Protein Magnum",p:18,c:11,f:13,k:240,ing:"100 g vaníliás Skyr, 10 g vaníliás fehérje, 10 g mogyoróvaj, 5 g méz/karamell szirup, 10 g étcsoki, 3 g kókuszolaj, csipet só",el:"A Skyrt keverd össze a fehérjeporral és a mogyoróvajjal, öntsd egy kis formába, és fagyaszd 1-2 órára. Az étcsokit olvaszd meg a kókuszolajjal, húzd ki a fagyasztott krémet a formából, mártsd bele a csokiba, és szórd meg egy csipet sóval."},
+{n:"Bounty Protein Pohárkrém",p:19,c:10,f:9,k:210,ing:"120 g Skyr, 10 g kókuszreszelék, 10 g vaníliás fehérje, 5 g étcsoki",el:"Keverd össze a Skyrt a kókuszreszelékkel és a fehérjeporral, majd tetejére reszelj vagy csepegtess étcsokit. Ne hagyd sokáig a fagyasztóban, mert túl kemény lesz, 20-30 perc pont elég a formázáshoz."},
+{n:"FITT Sajtos-Túrós Pogácsa",p:26,c:23,f:11,k:300,ing:"200 g zsírszegény túró, 1 tojás, 30 g zabliszt, 1/2 tk sütőpor, 1/4 tk só, 20 g reszelt light sajt",el:"A túrót és a tojást alaposan keverd össze. Add hozzá a zablisztet, a sütőport és a sót, majd keverd masszává. Formázz belőle 4-5 pogácsát, helyezd sütőpapírra, szórd meg a maradék sajttal, és 180°C-on süsd 18-22 percig, amíg aranybarna lesz."},
+{n:"Protein Brownie",p:24,c:15,f:5,k:210,ing:"20 g csokis fehérjepor, 10 g kakaópor, 15 g zabpehelyliszt, 1 tojásfehérje, 30 ml tej",el:"Keverd össze az összes hozzávalót, öntsd egy kisebb formába, majd mikróban süsd 2 percig, vagy sütőben 180°C-on 10 percig. Hagyd pár percig pihenni, mielőtt kiveszed – a közepe maradjon kicsit lágy, így lesz igazán brownie-s."},
+{n:"Áfonyás Fehércsokis Cheesecake Krém",p:28,c:16,f:5,k:220,ing:"100 g sovány krémtúró, 50 g görög joghurt, 10 g vaníliás fehérje, 50 g áfonya, 5 g fehércsoki/kekszmorzsa",el:"A sovány krémtúrót keverd össze a görög joghurttal és a fehérjeporral simára. Keverd bele az áfonyát, vagy tedd a tetejére, majd szórd meg reszelt fehércsokival vagy kekszmorzsával. Tedd hűtőbe 20-30 percre, hogy összeérjenek az ízek."},
+,
+{n:"Görögdinnye/sárgadinnye, cottage cheese, tökmag (Challenge, hétfő uzsonna)",p:13.6,c:16.0,f:7.0,k:181,ing:"150 g görögdinnye vagy sárgadinnye, 100 g cottage cheese, 5 g tökmag, menta, citromlé",el:"A dinnyét kockázd fel, tálald a cottage cheese-zel, szórd meg tökmaggal és friss mentával."},
+{n:"Alma, félzsíros sajt, dió (Challenge, kedd uzsonna)",p:12.3,c:23.5,f:18.9,k:313,ing:"150 g alma vagy szezonális gyümölcs, 40 g félzsíros sajt, 15 g dió",el:"Az almát szeleteld fel, tálald a felkockázott sajttal és dióval."},
+{n:"Kókuszos pohárkrém dinnyével, feta sajttal (Challenge, szerda uzsonna)",p:8.6,c:14.6,f:8.4,k:168,ing:"150 g görögdinnye vagy sárgadinnye, 40 g light feta sajt, 30 g rukkola, 5 g tökmag, menta, citromlé",el:"A dinnyekockákat keverd össze a rukkolával, morzsold rá a feta sajtot, szórd meg tökmaggal és friss mentával, csepegtess rá citromlevet."},
+{n:"Sárgadinnye, csirkemellsonka, rukkola, dió (Challenge, csütörtök uzsonna)",p:14.2,c:15.2,f:8.0,k:190,ing:"150 g sárgadinnye, 60 g csirkemell- vagy pulykamellsonka, 20 g rukkola, 10 g dió",el:"A dinnyét kockázd fel, tálald a felcsíkozott sonkával, rukkolával és dióval."},
+{n:"Cottage cheese, szőlő, dió (Challenge, péntek uzsonna)",p:12.4,c:22.1,f:7.8,k:208,ing:"100 g cottage cheese, 100 g szőlő, 5 g dió",el:"A cottage cheese-t tálald a szőlőszemekkel és dióval."},
+{n:"Kenyér, csirkemellsonka, jégsaláta (Challenge, szombat uzsonna)",p:16.3,c:15.2,f:2.3,k:147,ing:"1 szelet teljes kiőrlésű toast kenyér, 60 g csirkemell- vagy pulykamellsonka, 100 g jégsaláta",el:"Készíts egyszerű szendvicset a kenyérből, sonkából és jégsalátából."},
+{n:"Eper, light mozzarella, rukkola, tökmag (Challenge, vasárnap uzsonna)",p:14.0,c:14.5,f:10.0,k:203,ing:"150 g eper, 50 g light mozzarella, 30 g rukkola, 5 g tökmag",el:"Az epret vágd félbe, keverd össze a rukkolával és a kockázott mozzarellával, szórd meg tökmaggal."}
+],
+vacsora: [
+{n:"Túró Alapú Kenyérlángos",p:33,c:16,f:12,k:320,ing:"125 g zsírszegény túró, 20 g zabliszt, 1 tojás, 1/4 tk sütőpor, csipet só, 40 g csirkemellsonka, 25 g lilahagyma, 20 g protein tejföl, 20 g reszelt light sajt",el:"A túrót keverd össze a tojással, a zabliszttel, a sütőporral és egy csipet sóval, formázz belőle lapos, kenyérlángos alakú tésztát. 180°C-ra előmelegített sütőben süsd 15-20 percig. Kivéve pakold meg csirkemellsonkával, lilahagymával, protein tejföllel és reszelt light sajttal."},
+{n:"Sült csirkemell édesburgonyával",p:32,c:35,f:10,k:380,ing:"120 g csirkemell, 150 g édesburgonya, 1 tk olívaolaj, fűszerek",el:"Az édesburgonyát szeleteld fel, fűszerezd, és 200°C-on süsd 25 percig. A csirkemellet fűszerezd, és süsd meg serpenyőben vagy sütőben. Édesburgonyás vacsora, mely reggelire is elkészíthető, ha előre elkészíted."},
+{n:"Könnyű zöldségleves csirkével",p:25,c:12,f:5,k:220,ing:"100 g csirkemell, 250 g vegyes zöldség, fűszerek",el:"Főzd meg a csirkemellet a vegyes zöldséggel enyhén sós vízben 15-20 percig, amíg minden hozzávaló megpuhul. Egyik kedvenc könnyű levese."},
+{n:"Csirkés tortilla wrap",p:30,c:30,f:10,k:360,ing:"1 teljes kiőrlésű tortilla, 100 g csirkemell, zöldség, 50 g joghurt",el:"A csirkemellet süsd meg, majd szeleteld fel. Tekerd bele a tortillába a zöldséggel és a joghurttal. Ha wrapet szeretnél „gyorsabbra”, ehhez az étkezéshez ajánlott."},
+{n:"Fehérjés rántotta zöldséggel",p:30,c:24,f:8,k:320,ing:"1 egész tojás + 2 tojásfehérje, 150 g zöldség, 20 g light sajt, 2 szelet pirított toast kenyér (40 g)",el:"A tojásokat üsd fel és keverd össze a zöldségekkel. Serpenyőben, kevés olajon süsd meg krémesre. Közben a kenyérszeleteket pirítsd meg, és tálald együtt a rántottával."},
+{n:"Tonhalkrém",p:32,c:22,f:11,k:330,ing:"1 konzerv tonhal (vízben, lecsöpögtetve), 50 g görög joghurt, 1 tk mustár, só, bors, fűszerek, 100 g uborka, 1 szelet teljes kiőrlésű kenyér",el:"A tonhalat csepegtesd le, majd keverd össze a görög joghurttal, a mustárral és a fűszerekkel krémesre. Szeleteld fel az uborkát, pirítsd meg a kenyeret, majd kend meg a tonhalkrémmel, és az uborkával tálald."},
+{n:"Tojásos tortilla wrap",p:25,c:25,f:12,k:370,ing:"2 tojás, 1 tortilla, zöldség, 20 g sajt",el:"A tojást süsd meg (rántottaként vagy tükörtojásként), majd töltsd a tortillába a zöldséggel és a sajttal, tekerd fel szorosan."},
+{n:"Sült halfilé édesburgonyával",p:30,c:30,f:10,k:370,ing:"150 g édesburgonya, 150 g halfilé (lazac, hekk, tilápia, pangasius), 1 tk olívaolaj, só, bors, friss petrezselyem",el:"Melegítsd elő a sütőt 200°C-ra. Az édesburgonyát vágd kockára, és süsd 25-30 percig. A halfilét sózd, borsozd, meglocsold olívaolajjal, majd süsd 12-15 percig. Ha bőségesebb vacsorát szeretnél, válassz süteni hala helyett, ha pedig laktatóbbat, akkor sütőben süsd az adaggal."},
+{n:"Gyümölcsös fehérjés túrókrém (desszert vacsora)",p:28,c:15,f:5,k:240,ing:"150 g sovány túró, 20 g vaníliás fehérjepor, 50 g bogyós gyümölcs, 30 g görög joghurt, édesítő",el:"A túrót keverd össze a fehérjeporral krémesre. Add hozzá a görög joghurtot, majd keverd bele a bogyós gyümölcsöt, vagy tedd a tetejére. Igény szerint tehetsz be 10 percre a hűtőbe, hidegen még inkább „desszert” élményt ad."},
+{n:"Tárkonyos csirkeraguleves",p:26,c:10,f:10,k:280,ing:"120 g csirkemell filé, 1/2 fej vöröshagyma, 1 gerezd fokhagyma, sárgarépa, fehérrépa, zöldborsó, gomba, alaplé, 50 ml light tejszín, tárkony, citromlé",el:"A vöröshagymát apróra vágva, kevés olajon dinszteld meg, add hozzá a fokhagymát, a sárgarépát, a fehérrépát és a gombát, dinszteld tovább. Add hozzá a felkockázott csirkemellet és az alaplét, majd főzd 15-20 percig. Fűszerezd tárkonnyal, sóval, borssal, és a végén csavarj bele citromlevet."},
+{n:"Protein Pizzás Csiga Tortillából",p:28,c:6,f:13,k:251,ing:"1 db tortilla, 100 g görög joghurt, sonka, paradicsom, sajt, fűszerek",el:"Terítsd ki a tortillát, kend meg vékonyan görög joghurttal. Szórd meg csirkemellsonkával, paradicsommal és fűszernövénnyel, ha szeretnéd, adj hozzá sajtot is. Tekerd fel szorosan, vágd karikákra, majd 180°C-on süsd 2-3 percig oldalanként, aranybarnára."},
+{n:"Felhőlángos",p:28,c:6,f:13,k:255,ing:"2 tojás, 100 g zsírszegény túró, 1/2 tk sütőpor, csipet só, 40 g csirkemellsonka, 25 g lilahagyma, 20 g protein tejföl, 20 g reszelt light sajt",el:"A tojásokat válaszd szét fehérjére és sárgájára. A túrót keverd össze a sárgájával, a sütőporral és egy csipet sóval. Kend a masszát vékony korongokra, tedd rá a csirkemellsonkát, a lilahagymát, a protein tejfölt és a reszelt sajtot. 180°C-on süsd 15-18 percig, aranybarnára. Szerintem az egyik legjobb diétás vacsora."},
+{n:"Amerikai Burger Saláta",p:26,c:11,f:11,k:280,ing:"120 g darált pulykahús, 100 g jégsaláta, 80 g paradicsom, 90 g görög joghurt, 1 gerezd fokhagyma, só, bors",el:"A darált pulykahúst formázz pogácsákra, fűszerezd, és grillserpenyőben süsd meg mindkét oldalát 5 percig. A salátát, a paradicsomot és az uborkát vágd fel, keverd össze mustáros joghurttal. Tedd rá a húspogácsát, és tálald."},
+{n:"Cottage Cheese Tojáslepény",p:28,c:7,f:13,k:290,ing:"2 db tojás, 100 g cottage cheese, 1 ek aprított petrezselyem, 1 szál zöldhagyma, só, bors",el:"A tojásokat verd fel, add hozzá a cottage cheese-t, az apróra vágott petrezselymet és a zöldhagymát, sózd, borsozd. Serpenyőben süsd meg mindkét oldalát 3-5 percig."},
+{n:"Guacamole Toast Tojással",p:24,c:28,f:17,k:370,ing:"2 szelet teljes kiőrlésű kenyér, 50 g avokádó, 2 tojás, 80 g paradicsom, citromlé",el:"Az avokádót villával törd össze, ízesítsd citromlével, sóval, borssal. Pirítsd meg a kenyérszeleteket, kend meg az avokádókrémmel, tedd rá a paradicsomot. A tojást süsd meg (tükörre vagy rántottának), és tedd a tetejére. Ez mindig olyan, mintha egy „brunchos” reggelit ennél."},
+{n:"Sült Camembert Salátával",p:24,c:10,f:16,k:300,ing:"80 g light camembert, 100 g vegyes saláta, 80 g uborka, 80 g paradicsom, só, bors",el:"A camembert sajtot tedd airfryerbe vagy sütőbe 8-10 percre, amíg belül megolvad. Közben keverd össze a salátát, az uborkát és a paradicsomot. Tálald a friss saláta mellé az olvadt sajtot."},
+{n:"Krémes Brokkolileves Csirkemellel",p:32,c:14,f:8,k:290,ing:"250 g brokkoli, 100 g csirkemell, 50 g görög joghurt, 1 gerezd fokhagyma, só, bors, 500 ml víz",el:"A brokkolit és a csirkemellet főzd puhára a vízben. Turmixold össze krémesre, add hozzá a görög joghurtot és a fokhagymát, ízesítsd sóval és borssal. Tálald frissen aprított petrezselyemmel."},
+{n:"Sonkás-Sajtos Melegszendvics",p:24,c:31,f:18,k:390,ing:"1 db teljes kiőrlésű tortilla (60 g), 2 db csökkentett zsírtartalmú virsli (80 g), 20 g light reszelt sajt, 15 g ketchup, 10 g mustár",el:"Kend meg a tortillát a ketchuppal és a mustárral. Helyezd rá a felkarikázott virslit és a light sajtot, tekerd fel szorosan. Serpenyőben vagy toasterben süsd meg mindkét oldalát, amíg a sajt megolvad és a tortilla ropogós lesz."},
+{n:"Protein Palacsinta Tányér",p:30,c:26,f:9,k:340,ing:"1 tojás, 20 g vaníliás fehérjepor, 25 g zabpehelyliszt, 50 ml tej, 80 g eper",el:"A tojást, a fehérjeport és a zabpehelylisztet keverd össze a tejjel simára. Előmelegített serpenyőben süsd meg a palacsintákat, oldalanként 2-3 percig, amíg buborékosak lesznek. Halmozd egymásra egy tányéron, és a tetejét díszítsd eperrel."},
+{n:"Kókuszos Protein Tejbegríz",p:20,c:32,f:8,k:301,ing:"250 ml tej, 35 g búzadara, 15 g vaníliás fehérjepor, 10 g kókuszreszelék, édesítő, fahéj",el:"A tejet öntsd egy lábosba, add hozzá a búzadarát. Alacsony lángon főzd 8-10 percig, amíg besűrűsödik. Vedd le a tűzről, keverd hozzá a fehérjeport és a kókuszreszeléket. Édesítsd, fűszerezd fahéjjal."},
+]
+};
+
+// ====== EDZÉSADATBÁZIS — konditermi és otthoni edzésterv PDF, A/B/C heti variánsokkal ======
+function yt(q){ return "https://www.youtube.com/results?search_query="+encodeURIComponent(q); }
+
+const WORKOUT_DB = {
+gym: {
+  label: "Konditermi edzés",
+  weeks: ["A","B","C"],
+  weekLabel: { A:"A hét (1–4. hét)", B:"B hét (2–5. hét)", C:"C hét (3–6. hét)" },
+  days: [
+    { key:"alsotest", name:"Alsótest edzés", est:40, kcalPerMin:7.5, variants:{
+      A:[
+        {ex:"Guggolás keretben", sets:"4×10", url:yt("smith machine squat")},
+        {ex:"Lábhajlító gép", sets:"3×12", url:yt("lying leg curl machine")},
+        {ex:"Lábtoló gép", sets:"4×10", url:yt("leg press machine")},
+        {ex:"Bolgár guggolás", sets:"3×12/láb", url:yt("bulgarian split squat")},
+        {ex:"Combtávolító gép", sets:"3×15", url:yt("hip abduction machine")},
+        {ex:"Vádli gépen", sets:"3×20", url:yt("seated calf raise machine")},
+      ],
+      B:[
+        {ex:"Hack guggolás gépen", sets:"4×10", url:yt("hack squat machine")},
+        {ex:"Bolgár guggolás kézisúllyal", sets:"3×12/láb", url:yt("bulgarian split squat dumbbell")},
+        {ex:"Hip Thrust gépen", sets:"4×12", url:yt("hip thrust machine")},
+        {ex:"Combhajlító gép", sets:"4×10", url:yt("leg curl machine")},
+        {ex:"Combtávolító gép", sets:"3×15", url:yt("hip abduction machine")},
+        {ex:"Szumó guggolás", sets:"4×10", url:yt("sumo squat dumbbell")},
+        {ex:"Vádli gépen", sets:"3×20", url:yt("standing calf raise machine")},
+      ],
+      C:[
+        {ex:"Smith keretes szumó guggolás", sets:"4×12", url:yt("smith machine sumo squat")},
+        {ex:"Sétáló kitörés kézisúllyal", sets:"3×12/láb", url:yt("walking lunge dumbbells")},
+        {ex:"45° hiperhajlító – farizom fókusz", sets:"4×12", url:yt("45 degree back extension glute focus")},
+        {ex:"Csigás láblendítés hátra", sets:"3×15/láb", url:yt("cable glute kickback")},
+        {ex:"Csigás oldalsó lábemelés", sets:"3×15/láb", url:yt("cable hip abduction")},
+        {ex:"Lábtoló gép", sets:"4×12", url:yt("leg press machine")},
+        {ex:"Combközelítés gépen", sets:"4×12", url:yt("hip adduction machine")},
+      ],
+    }},
+    { key:"felsotest", name:"Felsőtest edzés", est:40, kcalPerMin:6.5, variants:{
+      A:[
+        {ex:"Mellnyomó gép", sets:"4×10", url:yt("chest press machine")},
+        {ex:"Széles lehúzás csigán", sets:"4×12", url:yt("lat pulldown wide grip")},
+        {ex:"Ülő evező gép", sets:"3×12", url:yt("seated cable row")},
+        {ex:"Vállból nyomás gépen", sets:"3×12-12", url:yt("shoulder press machine")},
+        {ex:"Oldalemelés kézisúllyal", sets:"4×10", url:yt("dumbbell lateral raise")},
+        {ex:"Bicepsz csigán", sets:"4×10", url:yt("cable bicep curl")},
+        {ex:"Tricepsz letolás csigán", sets:"4×10", url:yt("cable tricep pushdown")},
+      ],
+      B:[
+        {ex:"Lehúzás mellhez széles fogással", sets:"4×12", url:yt("wide grip lat pulldown")},
+        {ex:"Tárogatás gépen (Pec Deck)", sets:"4×10", url:yt("pec deck machine")},
+        {ex:"Face Pull csigán", sets:"4×12", url:yt("face pull cable")},
+        {ex:"Vállból nyomás súlyzóval", sets:"4×12", url:yt("dumbbell shoulder press")},
+        {ex:"Előre emelés csigán", sets:"4×10", url:yt("cable front raise")},
+        {ex:"Hátsó váll gép", sets:"3×12", url:yt("reverse pec deck")},
+        {ex:"Kalapács bicepsz", sets:"3×12", url:yt("hammer curl dumbbell")},
+        {ex:"Tricepsz letolás kötéllel", sets:"4×12", url:yt("rope tricep pushdown")},
+      ],
+      C:[
+        {ex:"Fekvenyomás padon rúddal", sets:"4×12", url:yt("barbell bench press")},
+        {ex:"Tárogatás gépen", sets:"4×10", url:yt("machine chest fly")},
+        {ex:"Pec Deck gép", sets:"4×10", url:yt("pec deck machine")},
+        {ex:"Egyenes karos lehúzás csigán", sets:"3×15", url:yt("straight arm pulldown")},
+        {ex:"T-rudas evezés", sets:"4×12", url:yt("t bar row")},
+        {ex:"Arnold nyomás súlyzóval", sets:"4×10", url:yt("arnold press")},
+        {ex:"Bicepsz karhajlítás", sets:"4×10", url:yt("dumbbell bicep curl")},
+        {ex:"Tricepsz nyújtás kötéllel fej fölött", sets:"3×12", url:yt("overhead rope tricep extension")},
+      ],
+    }},
+    { key:"teljestest", name:"Teljes testedzés", est:45, kcalPerMin:7.5, variants:{
+      A:[
+        {ex:"Lábtoló gép", sets:"3×15", url:yt("leg press machine")},
+        {ex:"Evezés csigán", sets:"3×12", url:yt("seated cable row")},
+        {ex:"Fekvenyomás padon kézisúlyzóval", sets:"4×10", url:yt("dumbbell bench press")},
+        {ex:"Román felhúzás rúddal", sets:"4×10", url:yt("barbell romanian deadlift")},
+        {ex:"Döntött törzsű evezés rúddal", sets:"4×10", url:yt("barbell bent over row")},
+        {ex:"Plank tartás", sets:"3×30 mp", url:yt("plank exercise")},
+        {ex:"Páros lábemelés talajon", sets:"4×12", url:yt("lying leg raise exercise")},
+      ],
+      B:[
+        {ex:"Vállból nyomás súlyzóval", sets:"4×12", url:yt("dumbbell shoulder press")},
+        {ex:"Oldalemelés gépen", sets:"4×10", url:yt("lateral raise machine")},
+        {ex:"Döntött törzsű evezés", sets:"4×10", url:yt("bent over row dumbbell")},
+        {ex:"Kalapács bicepsz kézisúlyzóval", sets:"4×10", url:yt("hammer curl dumbbell")},
+        {ex:"Bicepsz karhajlítás + Bicikli hasprés", sets:"3×12+15", url:yt("bicycle crunch")},
+        {ex:"Lórúgás (Kick Back) + Hasprés gépen", sets:"3×12+15", url:yt("glute kickback exercise")},
+      ],
+      C:[
+        {ex:"Felhúzás + vállból nyomás", sets:"3×15", url:yt("dumbbell deadlift to shoulder press")},
+        {ex:"Mellkashoz húzás szűk fogással", sets:"4×12", url:yt("close grip lat pulldown")},
+        {ex:"Lábnyújtás gépen", sets:"4×12", url:yt("leg extension machine")},
+        {ex:"Combtávolító gép előredőlve", sets:"3×20", url:yt("hip abduction machine glute focus")},
+        {ex:"Plank vállérintéssel", sets:"3×20", url:yt("plank shoulder taps")},
+        {ex:"Szumó guggolás", sets:"4×12", url:yt("sumo squat dumbbell")},
+        {ex:"Tricepsznyújtás fej fölött súlyzóval", sets:"4×10", url:yt("dumbbell overhead tricep extension")},
+        {ex:"Bicepsz csigán", sets:"4×10", url:yt("cable bicep curl")},
+      ],
+    }},
+    { key:"kardio", name:"Konditermi kardió", est:30, kcalPerMin:8, variants:{
+      A:[
+        {ex:"Futópadon séta/kocogás emelkedőn", sets:"30–45 perc", url:yt("treadmill incline walk")},
+        {ex:"VAGY Kerékpár", sets:"30 perc", url:yt("stationary bike workout")},
+        {ex:"VAGY Lépcsőzőgép", sets:"20–30 perc", url:yt("stair climber workout")},
+      ],
+      B:[
+        {ex:"Futópad emelkedőn", sets:"30–40 perc", url:yt("treadmill incline walk")},
+        {ex:"VAGY Kerékpár", sets:"30 perc", url:yt("stationary bike workout")},
+        {ex:"VAGY Lépcsőzőgép", sets:"20–25 perc", url:yt("stair climber workout")},
+      ],
+      C:[
+        {ex:"Futópadon séta/kocogás", sets:"35 perc", url:yt("treadmill walk jog")},
+        {ex:"VAGY szabadtéri sporttevékenység", sets:"35 perc", url:yt("outdoor cardio workout")},
+      ],
+    }},
+  ]
+},
+home: {
+  label: "Otthoni edzés",
+  weeks: ["A","B","C"],
+  weekLabel: { A:"A hét (1–4. hét)", B:"B hét (2–5. hét)", C:"C hét (3–6. hét)" },
+  days: [
+    { key:"alsotest", name:"Alsótest edzés", est:30, kcalPerMin:6.5, variants:{
+      A:[
+        {ex:"Haránt kitörés", sets:"3×12/láb", url:yt("curtsy lunge tutorial")},
+        {ex:"Támasztott román felhúzás", sets:"3×12/láb", url:yt("b stance romanian deadlift")},
+        {ex:"Guggolás kézisúlyzóval", sets:"4×10", url:yt("goblet squat dumbbell")},
+        {ex:"Csípőemelés súlyzóval (hip thrust)", sets:"3×20", url:"https://www.youtube.com/watch?v=4u05HaB9iZg"},
+        {ex:"Fellépés székre vagy padra", sets:"3×12/láb", url:yt("step up exercise")},
+        {ex:"Falnál ülés", sets:"3×30 mp", url:yt("wall sit exercise")},
+      ],
+      B:[
+        {ex:"Szumó guggolás kézisúllyal", sets:"3×12", url:yt("sumo squat dumbbell")},
+        {ex:"Kitörés hátra", sets:"3×12/láb", url:yt("reverse lunge")},
+        {ex:"Egylábas csípőemelés", sets:"3×12/láb", url:yt("single leg hip thrust")},
+        {ex:"Merevlábas felhúzás", sets:"3×12", url:"https://www.youtube.com/watch?v=rQT2dI6FiQ0"},
+        {ex:"Bicikli hasprés", sets:"3×15", url:"https://www.youtube.com/watch?v=cbKIDZ_XyjY"},
+        {ex:"Guggolásból felugrás", sets:"4×12", url:"https://www.youtube.com/watch?v=y50BnxR5DjY"},
+      ],
+      C:[
+        {ex:"Goblet guggolás kézisúllyal", sets:"4×12", url:yt("goblet squat")},
+        {ex:"Kozák guggolás", sets:"3×10/láb", url:yt("cossack squat")},
+        {ex:"Csípőemelés súllyal", sets:"3×20", url:yt("hip thrust dumbbell")},
+        {ex:"Felhúzás + vállból nyomás", sets:"4×10", url:"https://www.youtube.com/watch?v=QLRZSxP3jIQ"},
+        {ex:"Guggolás pulzálva", sets:"3×15", url:"https://www.youtube.com/shorts/uyj7evsQAuI"},
+        {ex:"Kitartott guggolás (falnál ülés)", sets:"3×30 mp", url:yt("wall sit exercise")},
+        {ex:"Fekvő lábemelés", sets:"4×12", url:"https://www.youtube.com/watch?v=blECg1eko8g"},
+      ],
+    }},
+    { key:"felsotest", name:"Felsőtest edzés", est:30, kcalPerMin:6, variants:{
+      A:[
+        {ex:"Vállból nyomás", sets:"3×12", url:"https://www.youtube.com/watch?v=Kq4VLrVxowo"},
+        {ex:"Pulóver kézisúllyal", sets:"3×12", url:yt("dumbbell pullover")},
+        {ex:"Oldalemelés", sets:"4×10", url:"https://www.youtube.com/watch?v=j3FS90HEDVg"},
+        {ex:"Bicepsz hajlítás", sets:"4×10", url:"https://www.youtube.com/watch?v=CbEtey5jKxI"},
+        {ex:"Előre emelés", sets:"4×10", url:"https://www.youtube.com/watch?v=nznMaYAT0fI"},
+        {ex:"Tricepsz nyújtás fej fölött", sets:"3×12", url:yt("overhead tricep extension dumbbell")},
+        {ex:"Fekvő lábemelés", sets:"4×12", url:"https://www.youtube.com/watch?v=blECg1eko8g"},
+      ],
+      B:[
+        {ex:"Arnold nyomás", sets:"4×12", url:"https://www.youtube.com/watch?v=ZC4A-JnXddY"},
+        {ex:"Oldalemelés", sets:"4×10", url:yt("lateral raise")},
+        {ex:"Döntött törzsű hátsóváll emelés", sets:"4×10", url:yt("rear delt raise")},
+        {ex:"Egykezes evezés", sets:"3×12", url:"https://www.youtube.com/shorts/sU_7MJeybsw"},
+        {ex:"Tricepsz nyújtás fej fölött", sets:"4×10", url:yt("overhead tricep extension dumbbell")},
+        {ex:"Lórúgás", sets:"3×12-12", url:"https://www.youtube.com/watch?v=0HTgHzIu2DM"},
+        {ex:"Plank tartás", sets:"3×40 mp", url:yt("plank exercise")},
+      ],
+      C:[
+        {ex:"Vállból nyomás (ülve)", sets:"4×12", url:yt("seated dumbbell shoulder press")},
+        {ex:"Előre emelés", sets:"4×10", url:"https://www.youtube.com/watch?v=9Vla_z9XgJ0"},
+        {ex:"Bicepsz hajlítás váltott karral", sets:"3×12/kar", url:yt("alternating dumbbell curl")},
+        {ex:"Egykezes evezés", sets:"3×12", url:yt("one arm dumbbell row")},
+        {ex:"Tricepsz nyújtás fej fölött", sets:"4×12", url:yt("overhead tricep extension dumbbell")},
+        {ex:"Plank vállérintéssel", sets:"3×20", url:yt("plank shoulder taps")},
+        {ex:"Bicikli hasprés", sets:"3×20", url:"https://www.youtube.com/watch?v=cbKIDZ_XyjY"},
+      ],
+    }},
+    { key:"teljestest", name:"Teljes testedzés", est:30, kcalPerMin:7, variants:{
+      A:[
+        {ex:"Guggolás térdemeléssel", sets:"3×15", url:"https://www.youtube.com/shorts/An8Zk_HEJiY"},
+        {ex:"Súly cipelés helyben járással", sets:"3×10/kar", url:"https://www.youtube.com/watch?v=D1r4dzFMIsA"},
+        {ex:"Evezés fekvőtámasz helyzetben", sets:"3×10/kar", url:"https://www.youtube.com/watch?v=Q28cLuweLv4"},
+        {ex:"Plank tartás", sets:"3×30–45 mp", url:yt("plank exercise")},
+        {ex:"Hegymászó gyakorlat", sets:"3×30 mp", url:"https://www.youtube.com/watch?v=kLh-uczlPLg"},
+        {ex:"Jumping jack + hasprés szuperszett", sets:"4×(45mp+15)", url:"https://www.youtube.com/watch?v=c4DAnQ6DtF8"},
+      ],
+      B:[
+        {ex:"Guggolás + oldalemelés", sets:"3×12", url:yt("squat to lateral raise")},
+        {ex:"Román felhúzás", sets:"3×12", url:"https://www.youtube.com/watch?v=xAL7lHwj30E"},
+        {ex:"Fellépés székre vagy padra", sets:"3×12/láb", url:yt("step up exercise")},
+        {ex:"Plank lábemeléssel", sets:"3×10/láb", url:yt("plank leg lift")},
+        {ex:"Orosz twist", sets:"3×20", url:yt("russian twist")},
+        {ex:"Hegymászó gyakorlat", sets:"3×45 mp", url:yt("mountain climber exercise")},
+      ],
+      C:[
+        {ex:"Guggolás + vállból nyomás", sets:"4×12", url:yt("squat to shoulder press")},
+        {ex:"Fellépés székre térdemeléssel", sets:"3×12/láb", url:yt("step up knee raise")},
+        {ex:"Román felhúzás", sets:"3×12", url:yt("romanian deadlift dumbbell")},
+        {ex:"Korcsolyázó lépés", sets:"3×20", url:yt("skater exercise")},
+        {ex:"Plank Jack", sets:"3×20", url:yt("plank jack")},
+        {ex:"Mountain Climber", sets:"3×50 mp", url:yt("mountain climber")},
+        {ex:"Hollow Hold", sets:"3×20–30 mp", url:yt("hollow hold")},
+      ],
+    }},
+    { key:"kardio", name:"Kardiónap (otthon/szabadtéri)", est:30, kcalPerMin:8, variants:{
+      A:[ {ex:"Szabadtéri séta / kocogás", sets:"30 perc", url:yt("outdoor walk jog")} ],
+      B:[
+        {ex:"Séta", sets:"30–60 perc", url:yt("brisk walk cardio")},
+        {ex:"VAGY Kerékpár", sets:"30–45 perc", url:yt("cycling cardio workout")},
+        {ex:"VAGY Kocogás", sets:"20–30 perc", url:yt("jogging cardio")},
+      ],
+      C:[
+        {ex:"Séta", sets:"30–60 perc", url:yt("brisk walk cardio")},
+        {ex:"VAGY Kerékpár", sets:"30–45 perc", url:yt("cycling cardio workout")},
+        {ex:"VAGY Kocogás", sets:"20–30 perc", url:yt("jogging cardio")},
+      ],
+    }},
+  ]
+},
+};
+
+// ====== Bemelegítés / nyújtás (minden edzés előtt / után) ======
+const WARMUP_STRETCH = {
+  warmup: { name:"Bemelegítés (5 perc, minden edzés elején)", url:"https://www.youtube.com/watch?v=e-D02jSDwWU" },
+  stretch: { name:"Nyújtás (minden edzés végén)", url:"https://www.youtube.com/watch?v=_xHyjWCT_Bk" },
+};
+
+// ====== Kardió MET-értékek futáshoz/biciklizéshez (testsúly-alapú becsléshez) ======
+const CARDIO_MET = {
+  futas_lassu: { label: "Futás – könnyed tempó (~8 km/h)", met: 8.3 },
+  futas_kozepes: { label: "Futás – közepes tempó (~10 km/h)", met: 9.8 },
+  futas_gyors: { label: "Futás – gyors tempó (~12 km/h)", met: 11.8 },
+  futas_ultra: { label: "Futás – hosszútávú/ultra tempó", met: 10.5 },
+  biciklizes_lassu: { label: "Biciklizés – könnyed (~16 km/h)", met: 6.0 },
+  biciklizes_kozepes: { label: "Biciklizés – közepes (~20 km/h)", met: 8.0 },
+  biciklizes_gyors: { label: "Biciklizés – gyors/versenyszerű (~25+ km/h)", met: 10.0 },
+  gyaloglas: { label: "Gyaloglás / séta", met: 3.8 },
+};
+const SWEAT_RATE_L_PER_H = 0.8;
+
+// ================= ÁLLAPOT & TÁROLÁS =================
+const MEAL_META = {
+  reggeli:  { label:"Reggeli",  icon:"🌅" },
+  tizorai:  { label:"Tízórai",  icon:"🍎" },
+  ebed:     { label:"Ebéd",     icon:"🍲" },
+  uzsonna:  { label:"Uzsonna",  icon:"🥪" },
+  vacsora:  { label:"Vacsora",  icon:"🌙" },
+};
+const MEAL_ORDER = ["reggeli","tizorai","ebed","uzsonna","vacsora"];
+
+let customFoods = { reggeli:[], tizorai:[], ebed:[], uzsonna:[], vacsora:[] };
+let settings = {
+  kcalGoal: 1400, pPct: 35, cPct: 35, fPct: 30,
+  notif: { reggeli:"08:00", tizorai:"10:30", ebed:"13:00", uzsonna:"16:00", vacsora:"19:00" },
+  notifEnabled: false,
+  darkMode: false
+};
+let curDate = new Date();
+let dayData = null; // loaded per current date
+let daysIndex = [];
+let pickerCurrentMeal = null;
+let wCat = "gym";
+let wDayIdx = 0;
+let wWeek = "A";
+
+function fmtDate(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function isToday(d){ return fmtDate(d) === fmtDate(new Date()); }
+function isYesterday(d){ const y=new Date(); y.setDate(y.getDate()-1); return fmtDate(d)===fmtDate(y); }
+
+function emptyDay(){
+  return { meals:{ reggeli:[], tizorai:[], ebed:[], uzsonna:[], vacsora:[] }, workouts:[], fiberG:0, fiberLog:[], coffeeLog:[], noAlcohol:false };
+}
+
+async function loadSettings(){
+  try{
+    const r = await window.storage.get('settings', false);
+    if(r && r.value) settings = Object.assign(settings, JSON.parse(r.value));
+  }catch(e){}
+  try{
+    const r = await window.storage.get('customFoods', false);
+    if(r && r.value) customFoods = Object.assign(customFoods, JSON.parse(r.value));
+  }catch(e){}
+  try{
+    const r = await window.storage.get('daysIndex', false);
+    if(r && r.value) daysIndex = JSON.parse(r.value);
+  }catch(e){}
+}
+async function saveSettings(){
+  try{ await window.storage.set('settings', JSON.stringify(settings), false); }catch(e){}
+}
+async function saveCustomFoods(){
+  try{ await window.storage.set('customFoods', JSON.stringify(customFoods), false); }catch(e){}
+}
+async function saveDaysIndex(){
+  try{ await window.storage.set('daysIndex', JSON.stringify(daysIndex), false); }catch(e){}
+}
+async function loadDay(dateStr){
+  try{
+    const r = await window.storage.get('day:'+dateStr, false);
+    if(r && r.value) return Object.assign(emptyDay(), JSON.parse(r.value));
+  }catch(e){}
+  return emptyDay();
+}
+async function saveDay(dateStr, data){
+  try{ await window.storage.set('day:'+dateStr, JSON.stringify(data), false); }catch(e){}
+  if(!daysIndex.includes(dateStr)){
+    daysIndex.push(dateStr); daysIndex.sort();
+    await saveDaysIndex();
+  }
+}
+
+function allFoods(cat){
+  return (FOOD_DB[cat]||[]).concat(customFoods[cat]||[]);
+}
+
+// ================= SZÁMÍTÁSOK =================
+function dayTotals(){
+  let kcal=0,p=0,c=0,f=0;
+  MEAL_ORDER.forEach(m=>{
+    (dayData.meals[m]||[]).forEach(it=>{
+      kcal+=it.k*it.qty; p+=it.p*it.qty; c+=it.c*it.qty; f+=it.f*it.qty;
+    });
+  });
+  return {kcal,p,c,f};
+}
+function burnedTotals(){
+  let kcal=0, fluid=0;
+  (dayData.workouts||[]).forEach(w=>{ kcal+=w.kcal||0; fluid+=w.fluidMl||0; });
+  return {kcal,fluid};
+}
+function macroTargets(){
+  const k = settings.kcalGoal;
+  return {
+    p: Math.round(k*settings.pPct/100/4),
+    c: Math.round(k*settings.cPct/100/4),
+    f: Math.round(k*settings.fPct/100/9),
+  };
+}
+
+// ================= RENDER: FEJLÉC =================
+function renderHeader(){
+  const t = document.getElementById('dateTitle');
+  const sub = document.getElementById('dateSub');
+  let label = curDate.toLocaleDateString('hu-HU', {month:'long', day:'numeric'});
+  if(isToday(curDate)) t.firstChild.textContent = "Ma ";
+  else if(isYesterday(curDate)) t.firstChild.textContent = "Tegnap ";
+  else t.firstChild.textContent = curDate.toLocaleDateString('hu-HU',{weekday:'long'}) + " ";
+  sub.textContent = label;
+}
+
+// ================= TUDÁSTÁR (bővíthető) =================
+// Új cikk hozzáadásához csak bővítsd ezt a tömböt egy új {id, icon, title, tags, body} objektummal.
+const KNOWLEDGE_BASE = [
+  {
+    id: 'gyulladascsokkentes',
+    icon: '🌿',
+    title: 'Vitaminok és gyulladáscsökkentés a bélflóra helyreállításához',
+    tags: ['vitamin', 'gyulladás', 'bélflóra'],
+    body: `
+      <p><b>Miért fontos:</b> a béltraktus mikrobiomjának egyensúlya közvetlenül szabályozza a szervezet gyulladásos válaszát. Feldolgozott ételekben, cukorban gazdag, rostban szegény étrend csökkenti a jótékony baktériumok arányát, ami krónikus, alacsony fokú gyulladáshoz vezethet — ez rontja a fogyás hatékonyságát és a regenerációt is.</p>
+      <p><b>Kulcs tápanyagok:</b></p>
+      <ul>
+        <li><b>D-vitamin</b> (2000–4000 NE/nap) — immunmoduláció, bélnyálkahártya integritás</li>
+        <li><b>Omega-3</b> (1–3 g EPA/DHA) — gyulladáscsökkentő hatás, zsíros halakból vagy halolajból</li>
+        <li><b>C-vitamin</b> (75–200 mg) — antioxidáns, immunrendszer</li>
+        <li><b>Cink</b> (10–15 mg) — bélnyálkahártya-regeneráció</li>
+        <li><b>Magnézium</b> (300–400 mg) — kortizolszabályozás, alvásminőség</li>
+        <li><b>Polifenolok</b> — zöld tea, bogyós gyümölcsök, kurkuma, olívaolaj</li>
+      </ul>
+      <p><b>Amit növelni érdemes:</b> rost (25–35 g/nap), fermentált élelmiszerek (joghurt, kefir, savanyú káposzta), színes zöldség/gyümölcs napi 5+ adag, kurkuma és gyömbér.</p>
+      <p><b>Amit kerülni érdemes:</b> hozzáadott cukor, transzzsírok, alkohol, túlzott feldolgozott hús.</p>
+      <p><b>Gyakorlati lépések:</b> 0–2. hét: cukor és alkohol kihagyása, rost fokozatos bevezetése. 2–4. hét: napi fermentált étel + heti 2-3x zsíros hal. Folyamatosan: D-vitamin és omega-3 pótlás, napi zöld tea.</p>
+      <p style="font-size:12px;color:var(--muted)">Étrend-kiegészítő szedése előtt, különösen meglévő betegség vagy gyógyszerszedés esetén, érdemes orvossal egyeztetni.</p>
+    `
+  },
+  {
+    id: 'fogyas-alapelvek',
+    icon: '⚖️',
+    title: 'Fogyás alapelvek — a rendszer, nem a motiváció kérdése',
+    tags: ['fogyás', 'alapelv', 'deficit'],
+    body: `
+      <p>Nyolc alapelv, amire a napi terv és a rendszer épül:</p>
+      <ol>
+        <li><b>Nulla alkohol</b> — üres kalória, rontja az alvást, csökkenti a tesztoszteront, gátolja a zsírégetést.</li>
+        <li><b>Napi 7 000–10 000 lépés</b> — passzív kalóriaégetés (300–500 kcal), ami nem terheli a regenerációt.</li>
+        <li><b>Heti 3× erőedzés</b> — deficit alatt jelzi a szervezetnek, hogy tartsa meg az izmot.</li>
+        <li><b>Napi 8 óra alvás</b> — alváshiányban a test izomból bont le energiát, és felborul a ghrelin/leptin egyensúly.</li>
+        <li><b>Napi ~500 kcal deficit</b> — heti kb. 0,5 kg fenntartható zsírvesztés.</li>
+        <li><b>Napi 25–35 g rost</b> — stabilizálja a vércukrot, csökkenti az étvágyat, táplálja a bélflórát.</li>
+        <li><b>Kalóriák 90%-a teljes értékű ételekből</b> — nem kell tökéletesnek lenni, de az arány dönt.</li>
+        <li><b>Fehérje- és vízbevitel képletek</b> — víz (l) = testsúly (kg) × 0,033; fehérje (g) = testsúly (kg) × 1,8–2,2. A dehidratáció gyakran éhségérzetnek álcázza magát.</li>
+      </ol>
+      <p><b>Időtáv:</b> ez nem egy 30 napos kihívás, hanem 4–5 hónap következetes munka — a cél egy motivációtól független rendszer kialakítása.</p>
+      <p style="font-size:12px;color:var(--muted)">A víz- és fehérjeszükséglet automatikusan kiszámolható a Beállítások → TDEE-kalkulátornál a testsúlyod megadásával.</p>
+    `
+  }
+];
+
+function renderKnowledge(){
+  const wrap = document.getElementById('knowledgeWrap');
+  if(!wrap) return;
+  wrap.innerHTML = KNOWLEDGE_BASE.map(a=>`
+    <details class="card tight" style="margin-bottom:10px">
+      <summary style="cursor:pointer;font-weight:600;list-style:none;display:flex;align-items:center;gap:8px">
+        <span>${a.icon}</span><span style="flex:1">${a.title}</span><span style="font-size:12px;color:var(--muted)">▾</span>
+      </summary>
+      <div style="margin-top:12px;font-size:14px;line-height:1.5">${a.body}</div>
+    </details>
+  `).join('');
+}
+
+// ================= RÉSZÖSSZEG: ROST + ALKOHOLMENTES NAP =================
+const FIBER_GOAL = 30; // 25-35 g ajánlott sáv középértéke
+const MEAL_LABELS = {reggeli:'Reggeli', tizorai:'Tízórai', ebed:'Ebéd', uzsonna:'Uzsonna', vacsora:'Vacsora'};
+
+// Élelmiszer-adatbázis 100 g-ra: rost (f) + a teljes makróprofil (k,p,c,fat) — bővíthető tömb.
+// Ez adja a rost-bevitel automata étkezés-hozzáadását is (nem csak a rost kerül be, hanem a kalória/makró is).
+const FIBER_DB = [
+  {n:'uborka', k:16, p:0.7, c:3.6, fat:0.1, f:0.5},
+  {n:'paradicsom', k:18, p:0.9, c:3.9, fat:0.2, f:1.2},
+  {n:'paprika', k:31, p:1.0, c:6.0, fat:0.3, f:1.7},
+  {n:'sárgarépa', k:41, p:0.9, c:10.0, fat:0.2, f:2.8},
+  {n:'brokkoli', k:34, p:2.8, c:7.0, fat:0.4, f:2.6},
+  {n:'karfiol', k:25, p:1.9, c:5.0, fat:0.3, f:2.0},
+  {n:'kelkáposzta', k:27, p:2.0, c:4.0, fat:0.4, f:2.5},
+  {n:'fejes káposzta', k:25, p:1.3, c:6.0, fat:0.1, f:2.5},
+  {n:'spenót', k:23, p:2.9, c:3.6, fat:0.4, f:2.2},
+  {n:'saláta', k:15, p:1.4, c:2.9, fat:0.2, f:1.3},
+  {n:'cukkini', k:17, p:1.2, c:3.1, fat:0.3, f:1.0},
+  {n:'padlizsán', k:25, p:1.0, c:6.0, fat:0.2, f:3.0},
+  {n:'articsóka', k:47, p:3.3, c:10.5, fat:0.2, f:5.4},
+  {n:'édesburgonya', k:86, p:1.6, c:20.0, fat:0.1, f:3.0},
+  {n:'burgonya héjastól', k:77, p:2.0, c:17.0, fat:0.1, f:2.2},
+  {n:'burgonya', k:77, p:2.0, c:17.0, fat:0.1, f:1.8},
+  {n:'kukorica', k:86, p:3.2, c:19.0, fat:1.2, f:2.7},
+  {n:'zöldborsó', k:81, p:5.4, c:14.0, fat:0.4, f:5.1},
+  {n:'zöldbab', k:31, p:1.8, c:7.0, fat:0.1, f:2.7},
+  {n:'gomba', k:22, p:3.1, c:3.3, fat:0.3, f:1.0},
+  {n:'alma', k:52, p:0.3, c:14.0, fat:0.2, f:2.4},
+  {n:'körte', k:57, p:0.4, c:15.0, fat:0.1, f:3.1},
+  {n:'banán', k:89, p:1.1, c:23.0, fat:0.3, f:2.6},
+  {n:'narancs', k:47, p:0.9, c:12.0, fat:0.1, f:2.4},
+  {n:'eper', k:32, p:0.7, c:8.0, fat:0.3, f:2.0},
+  {n:'málna', k:52, p:1.2, c:12.0, fat:0.7, f:6.5},
+  {n:'áfonya', k:57, p:0.7, c:14.0, fat:0.3, f:2.4},
+  {n:'szeder', k:43, p:1.4, c:9.6, fat:0.5, f:5.3},
+  {n:'avokádó', k:160, p:2.0, c:9.0, fat:15.0, f:6.7},
+  {n:'kivi', k:61, p:1.1, c:15.0, fat:0.5, f:3.0},
+  {n:'szilva', k:46, p:0.7, c:11.0, fat:0.3, f:1.4},
+  {n:'őszibarack', k:39, p:0.9, c:10.0, fat:0.3, f:1.5},
+  {n:'zabpehely (nyers)', k:389, p:16.9, c:66.0, fat:6.9, f:10.0},
+  {n:'barna rizs (nyers)', k:370, p:7.9, c:77.0, fat:2.9, f:3.5},
+  {n:'fehér rizs (nyers)', k:365, p:7.0, c:80.0, fat:0.6, f:0.4},
+  {n:'teljes kiőrlésű kenyér', k:247, p:13.0, c:41.0, fat:3.4, f:6.5},
+  {n:'fehér kenyér', k:265, p:9.0, c:49.0, fat:3.2, f:2.7},
+  {n:'teljes kiőrlésű tészta (nyers)', k:348, p:13.0, c:68.0, fat:2.5, f:6.0},
+  {n:'quinoa (nyers)', k:368, p:14.0, c:64.0, fat:6.0, f:7.0},
+  {n:'bulgur (nyers)', k:342, p:12.0, c:76.0, fat:1.3, f:4.5},
+  {n:'csicseriborsó (főtt)', k:164, p:8.9, c:27.0, fat:2.6, f:7.6},
+  {n:'lencse (főtt)', k:116, p:9.0, c:20.0, fat:0.4, f:7.9},
+  {n:'vesebab (főtt)', k:127, p:8.7, c:23.0, fat:0.5, f:6.4},
+  {n:'tofu', k:76, p:8.0, c:1.9, fat:4.8, f:0.9},
+  {n:'mandula', k:579, p:21.0, c:22.0, fat:50.0, f:12.5},
+  {n:'dió', k:654, p:15.0, c:14.0, fat:65.0, f:6.7},
+  {n:'mogyoró', k:567, p:14.0, c:19.0, fat:49.0, f:8.5},
+  {n:'chia mag', k:486, p:17.0, c:42.0, fat:31.0, f:34.4},
+  {n:'lenmag', k:534, p:18.0, c:29.0, fat:42.0, f:27.3},
+  {n:'tökmag', k:559, p:30.0, c:11.0, fat:49.0, f:6.0},
+  {n:'napraforgómag', k:584, p:21.0, c:20.0, fat:51.0, f:8.6},
+  {n:'csirkemell (nyers)', k:165, p:31.0, c:0, fat:3.6, f:0},
+  {n:'tojás', k:155, p:13.0, c:1.1, fat:11.0, f:0},
+  {n:'sajt', k:350, p:25.0, c:2.0, fat:28.0, f:0},
+  {n:'natúr joghurt', k:61, p:3.5, c:4.7, fat:3.3, f:0},
+];
+FIBER_DB.sort((a,b)=>a.n.localeCompare(b.n,'hu'));
+
+function renderFiberFoodList(){
+  const dl = document.getElementById('fiberFoodList');
+  if(!dl) return;
+  dl.innerHTML = FIBER_DB.map(it=>`<option value="${it.n}">`).join('');
+}
+function fiberFindFood(name){
+  const q = (name||'').trim().toLowerCase();
+  if(!q) return null;
+  return FIBER_DB.find(it=>it.n.toLowerCase()===q) ||
+         FIBER_DB.find(it=>it.n.toLowerCase().includes(q) || q.includes(it.n.toLowerCase()));
+}
+function fiberUpdatePreview(){
+  const nameEl = document.getElementById('fiberFoodInput');
+  const gramsEl = document.getElementById('fiberGramsInput');
+  const prev = document.getElementById('fiberCalcPreview');
+  const match = fiberFindFood(nameEl.value);
+  const g = +gramsEl.value || 0;
+  if(!nameEl.value.trim()){ prev.textContent = ''; return; }
+  if(!match){ prev.textContent = 'Ismeretlen étel — próbáld a listából választani, vagy add meg a rostot közvetlenül lent.'; return; }
+  const ratio = g/100;
+  const rost = +(match.f*ratio).toFixed(1);
+  const k = Math.round(match.k*ratio);
+  const p = +(match.p*ratio).toFixed(1);
+  const c = +(match.c*ratio).toFixed(1);
+  const fat = +(match.fat*ratio).toFixed(1);
+  prev.textContent = `${g} g ${match.n}: ${k} kcal · F${p}g Sz${c}g Z${fat}g · 🌾${rost}g rost`;
+}
+
+function dayFiberTotal(){
+  const manual = dayData.fiberG || 0;
+  const logSum = (dayData.fiberLog||[]).reduce((s,it)=>s+(it.rost||0), 0);
+  return +(manual + logSum).toFixed(1);
+}
+
+function renderFiberLog(){
+  const wrap = document.getElementById('fiberLogWrap');
+  if(!wrap) return;
+  const log = dayData.fiberLog || [];
+  if(!log.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `<div class="hint" style="margin-bottom:6px">Mai rost-bevitelek:</div>` +
+    log.map(it=>`
+      <div class="item" style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)">
+        <div class="t">
+          <b>${it.n}${it.g? ' · '+it.g+' g':''}</b>
+          <span class="hint">${MEAL_LABELS[it.cat]||''}${it.k? ' · '+it.k+' kcal':''} · 🌾${it.rost}g rost</span>
+        </div>
+        <button class="x" data-fiber-remove="${it.fid}" style="width:26px;height:26px;border-radius:50%;background:var(--soft);font-size:13px;flex:none">✕</button>
+      </div>
+    `).join('');
+  wrap.querySelectorAll('[data-fiber-remove]').forEach(btn=>{
+    btn.onclick = ()=> fiberRemoveEntry(btn.dataset.fiberRemove);
+  });
+}
+
+async function fiberRemoveEntry(fid){
+  const log = dayData.fiberLog || [];
+  const idx = log.findIndex(it=>it.fid===fid);
+  if(idx===-1) return;
+  const entry = log[idx];
+  // ha volt hozzá kapcsolt étkezés-tétel, azt is távolítsuk el
+  if(entry.cat && dayData.meals[entry.cat]){
+    const mIdx = dayData.meals[entry.cat].findIndex(it=>it.fid===fid);
+    if(mIdx>-1) dayData.meals[entry.cat].splice(mIdx,1);
+  }
+  log.splice(idx,1);
+  await saveDay(fmtDate(curDate), dayData);
+  renderFiberAndAlcohol();
+  renderHome();
+  showToast('Törölve');
+}
+
+function renderFiberAndAlcohol(){
+  const fiber = dayFiberTotal();
+  const pct = Math.min(100, Math.round(fiber/FIBER_GOAL*100));
+  document.getElementById('fiberHint').textContent = `${fiber} / ${FIBER_GOAL} g`;
+  document.getElementById('barFiber').style.width = pct+'%';
+  renderFiberLog();
+
+  const btn = document.getElementById('btnToggleAlcoholFree');
+  const on = !!dayData.noAlcohol;
+  btn.textContent = on ? '✓ Alkoholmentes' : 'Jelölés';
+  btn.classList.toggle('on', on);
+}
+document.getElementById('fiberFoodInput').addEventListener('input', fiberUpdatePreview);
+document.getElementById('fiberGramsInput').addEventListener('input', fiberUpdatePreview);
+document.getElementById('btnAddFiberFood').onclick = async ()=>{
+  const nameEl = document.getElementById('fiberFoodInput');
+  const gramsEl = document.getElementById('fiberGramsInput');
+  const cat = document.getElementById('fiberCat').value;
+  const match = fiberFindFood(nameEl.value);
+  const g = +gramsEl.value || 0;
+  if(!match){ showToast('Nem található ez az étel — próbáld a listából, vagy add meg a rostot közvetlenül.'); return; }
+  if(!g){ showToast('Add meg a mennyiséget grammban.'); return; }
+  const ratio = g/100;
+  const rost = +(match.f*ratio).toFixed(1);
+  const k = Math.round(match.k*ratio);
+  const p = +(match.p*ratio).toFixed(1);
+  const c = +(match.c*ratio).toFixed(1);
+  const fat = +(match.fat*ratio).toFixed(1);
+  const fid = 'f'+Date.now()+Math.random().toString(36).slice(2,7);
+
+  // 1) bekerül a kiválasztott étkezésbe (kalória/makró számít bele a napi összegbe)
+  dayData.meals[cat].push({n: match.n, p, c, f: fat, k, qty:1, fid});
+  // 2) bekerül a rost-naplóba (listázáshoz, eltávolításhoz)
+  if(!dayData.fiberLog) dayData.fiberLog = [];
+  dayData.fiberLog.push({fid, n: match.n, g, cat, rost, k});
+
+  nameEl.value = ''; gramsEl.value = 100;
+  document.getElementById('fiberCalcPreview').textContent = '';
+  await saveDay(fmtDate(curDate), dayData);
+  renderFiberAndAlcohol();
+  renderHome();
+  showToast(`${match.n} hozzáadva (${MEAL_LABELS[cat]}) · +${rost}g rost`);
+};
+document.getElementById('btnAddFiber').onclick = async ()=>{
+  const v = +document.getElementById('fiberInput').value;
+  if(!v){ showToast('Add meg a rost mennyiségét grammban.'); return; }
+  const fid = 'f'+Date.now()+Math.random().toString(36).slice(2,7);
+  if(!dayData.fiberLog) dayData.fiberLog = [];
+  dayData.fiberLog.push({fid, n:'Kézi bevitel', g:null, cat:null, rost:v, k:null});
+  document.getElementById('fiberInput').value = '';
+  await saveDay(fmtDate(curDate), dayData);
+  renderFiberAndAlcohol();
+  showToast('Rost hozzáadva');
+};
+document.getElementById('btnToggleAlcoholFree').onclick = async ()=>{
+  dayData.noAlcohol = !dayData.noAlcohol;
+  await saveDay(fmtDate(curDate), dayData);
+  renderFiberAndAlcohol();
+};
+
+// ================= KÁVÉ ÖSSZEÁLLÍTÓ =================
+// Összetevők 100 g/ml-re vetített makróival — bővíthető tömb.
+const COFFEE_DB = [
+  {id:'black',   n:'Fekete kávé (feketén, cukor nélkül)', unit:'ml', k:2,   p:0.1, c:0.3, fat:0,   step:50,  def:150},
+  {id:'sugar',   n:'Kristálycukor', unit:'g', k:400, p:0,   c:100, fat:0,   step:1,   def:0},
+  {id:'sweet',   n:'Édesítőszer (folyékony/tabletta)', unit:'g', k:0,   p:0,   c:0,   fat:0,   step:1,   def:0},
+  {id:'milk15',  n:'Tej (félzsíros, 1,5%)', unit:'ml', k:46,  p:3.4, c:4.8, fat:1.5, step:10,  def:0},
+  {id:'milk35',  n:'Tej (zsíros, 3,5%)', unit:'ml', k:64,  p:3.4, c:4.8, fat:3.5, step:10,  def:0},
+  {id:'cream',   n:'Kávétejszín (10%)', unit:'ml', k:120, p:3.0, c:4.0, fat:10.0,step:5,   def:0},
+  {id:'oat',     n:'Zabtej', unit:'ml', k:47,  p:1.0, c:7.0, fat:1.5, step:10,  def:0},
+  {id:'almond',  n:'Mandulatej (édesítetlen)', unit:'ml', k:13,  p:0.4, c:0.3, fat:1.1, step:10,  def:0},
+  {id:'coconut', n:'Kókusztej (ital)', unit:'ml', k:24,  p:0.2, c:3.0, fat:1.0, step:10,  def:0},
+  {id:'soy',     n:'Szójatej', unit:'ml', k:33,  p:3.3, c:1.0, fat:1.8, step:10,  def:0},
+];
+
+document.getElementById('btnOpenCoffee').onclick = ()=>{
+  renderCoffeeBuilder();
+  openSheet('sheetCoffee');
+};
+
+function renderCoffeeBuilder(){
+  const wrap = document.getElementById('coffeeBuilderList');
+  wrap.innerHTML = COFFEE_DB.map(it=>`
+    <label class="fld" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="flex:1;margin-bottom:0">${it.n}</span>
+      <input type="number" class="coffee-amt" data-id="${it.id}" value="${it.def}" min="0" step="${it.step}" style="width:90px">
+      <span class="hint" style="width:22px">${it.unit}</span>
+    </label>
+  `).join('');
+  wrap.querySelectorAll('.coffee-amt').forEach(inp=> inp.addEventListener('input', coffeeUpdatePreview));
+  coffeeUpdatePreview();
+}
+
+function coffeeCompute(){
+  let k=0,p=0,c=0,fat=0;
+  const parts = [];
+  document.querySelectorAll('.coffee-amt').forEach(inp=>{
+    const amt = +inp.value || 0;
+    if(!amt) return;
+    const item = COFFEE_DB.find(x=>x.id===inp.dataset.id);
+    if(!item) return;
+    const ratio = amt/100;
+    k += item.k*ratio; p += item.p*ratio; c += item.c*ratio; fat += item.fat*ratio;
+    parts.push(`${item.n} ${amt}${item.unit}`);
+  });
+  return { k:Math.round(k), p:+p.toFixed(1), c:+c.toFixed(1), fat:+fat.toFixed(1), parts };
+}
+function coffeeUpdatePreview(){
+  const r = coffeeCompute();
+  const box = document.getElementById('coffeePreview');
+  if(!r.parts.length){ box.textContent = 'Válassz összetevőket a számításhoz.'; return; }
+  box.innerHTML = `<b>${r.parts.join(', ')}</b><br>${r.k} kcal · F${r.p}g Sz${r.c}g Z${r.fat}g`;
+}
+document.getElementById('btnAddCoffee').onclick = async ()=>{
+  const r = coffeeCompute();
+  if(!r.parts.length){ showToast('Adj meg legalább egy összetevőt.'); return; }
+  const cat = document.getElementById('coffeeCat').value;
+  const fid = 'cf'+Date.now()+Math.random().toString(36).slice(2,7);
+  const name = '☕ ' + r.parts.join(' + ');
+  dayData.meals[cat].push({n:name, p:r.p, c:r.c, f:r.fat, k:r.k, qty:1, fid});
+  if(!dayData.coffeeLog) dayData.coffeeLog = [];
+  dayData.coffeeLog.push({fid, n:name, cat, k:r.k, p:r.p, c:r.c, fat:r.fat});
+  await saveDay(fmtDate(curDate), dayData);
+  closeAllSheets();
+  renderHome();
+  showToast('Kávé hozzáadva ('+MEAL_LABELS[cat]+')');
+};
+function renderCoffeeLog(){
+  const wrap = document.getElementById('coffeeLogWrap');
+  if(!wrap) return;
+  const log = dayData.coffeeLog || [];
+  if(!log.length){ wrap.innerHTML = '<div class="hint">Ma még nincs rögzített kávé.</div>'; return; }
+  wrap.innerHTML = log.map(it=>`
+    <div class="item" style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)">
+      <div class="t">
+        <b style="font-size:13px">${it.n}</b>
+        <span class="hint">${MEAL_LABELS[it.cat]||''} · ${it.k} kcal · F${it.p}g Sz${it.c}g Z${it.fat}g</span>
+      </div>
+      <button class="x" data-coffee-remove="${it.fid}" style="width:26px;height:26px;border-radius:50%;background:var(--soft);font-size:13px;flex:none">✕</button>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('[data-coffee-remove]').forEach(btn=>{
+    btn.onclick = ()=> coffeeRemoveEntry(btn.dataset.coffeeRemove);
+  });
+}
+async function coffeeRemoveEntry(fid){
+  const log = dayData.coffeeLog || [];
+  const idx = log.findIndex(it=>it.fid===fid);
+  if(idx===-1) return;
+  const entry = log[idx];
+  if(entry.cat && dayData.meals[entry.cat]){
+    const mIdx = dayData.meals[entry.cat].findIndex(it=>it.fid===fid);
+    if(mIdx>-1) dayData.meals[entry.cat].splice(mIdx,1);
+  }
+  log.splice(idx,1);
+  await saveDay(fmtDate(curDate), dayData);
+  renderHome();
+  showToast('Törölve');
+}
+
+// ================= RENDER: ÁTTEKINTÉS =================
+function renderHome(){
+  const tot = dayTotals();
+  const burn = burnedTotals();
+  const goal = settings.kcalGoal;
+  const left = Math.round(goal - tot.kcal + burn.kcal*0); // nem adjuk hozzá a célhoz, csak infó
+  const pct = Math.min(100, Math.round(tot.kcal/goal*100)) || 0;
+
+  document.getElementById('kcalLeftBig').innerHTML = (Math.round(goal-tot.kcal)) + '<span>kcal maradt</span>';
+  document.getElementById('kcalSubText').textContent = `${Math.round(tot.kcal)} / ${goal} kcal elfogyasztva`;
+  const barKcal = document.getElementById('barKcal');
+  barKcal.style.width = pct+'%';
+  barKcal.parentElement.className = 'bar kcal' + (tot.kcal>goal ? ' over' : '');
+
+  const tgt = macroTargets();
+  document.getElementById('mProVal').textContent = Math.round(tot.p)+'g';
+  document.getElementById('mChVal').textContent = Math.round(tot.c)+'g';
+  document.getElementById('mFatVal').textContent = Math.round(tot.f)+'g';
+  document.getElementById('mProTgt').textContent = '/ '+tgt.p+'g';
+  document.getElementById('mChTgt').textContent = '/ '+tgt.c+'g';
+  document.getElementById('mFatTgt').textContent = '/ '+tgt.f+'g';
+  document.getElementById('barP').style.width = Math.min(100, tot.p/tgt.p*100||0)+'%';
+  document.getElementById('barC').style.width = Math.min(100, tot.c/tgt.c*100||0)+'%';
+  document.getElementById('barF').style.width = Math.min(100, tot.f/tgt.f*100||0)+'%';
+
+  document.getElementById('miniBurn').textContent = Math.round(burn.kcal)+' kcal';
+  document.getElementById('miniFluid').textContent = Math.round(burn.fluid)+' ml';
+
+  renderCoffeeLog();
+  renderFiberAndAlcohol();
+
+  // étkezések
+  const wrap = document.getElementById('mealsWrap');
+  wrap.innerHTML = '';
+  MEAL_ORDER.forEach(m=>{
+    const meta = MEAL_META[m];
+    const items = dayData.meals[m]||[];
+    const mkcal = items.reduce((s,it)=>s+it.k*it.qty,0);
+    const div = document.createElement('div');
+    div.className='meal';
+    let itemsHtml = '';
+    if(items.length===0){
+      itemsHtml = `<div class="empty">Még nincs hozzáadva étel.</div>`;
+    }else{
+      items.forEach((it,idx)=>{
+        itemsHtml += `<div class="item">
+          <div class="t"><b>${it.n}${it.qty!==1?' × '+it.qty:''}</b><small>F ${Math.round(it.p*it.qty)}g · Sz ${Math.round(it.c*it.qty)}g · Zs ${Math.round(it.f*it.qty)}g</small></div>
+          <div class="kc">${Math.round(it.k*it.qty)} kcal</div>
+          <button class="del" data-meal="${m}" data-idx="${idx}" data-act="delitem">✕</button>
+        </div>`;
+      });
+    }
+    div.innerHTML = `<div class="meal-head" data-meal="${m}" data-act="openpicker">
+        <div class="ic">${meta.icon}</div><div class="nm">${meta.label}</div>
+        <div class="kc">${mkcal? Math.round(mkcal)+' kcal':''}</div>
+        <div class="add">+</div>
+      </div>${itemsHtml}`;
+    wrap.appendChild(div);
+  });
+
+  // edzések
+  const wl = document.getElementById('workoutList');
+  const we = document.getElementById('workoutEmpty');
+  wl.innerHTML = '';
+  if((dayData.workouts||[]).length===0){ we.classList.remove('hidden'); }
+  else{
+    we.classList.add('hidden');
+    dayData.workouts.forEach((w,idx)=>{
+      const row = document.createElement('div');
+      row.className='item';
+      row.style.borderTop = idx===0 ? 'none' : '1px solid var(--line)';
+      row.innerHTML = `<div class="t"><b>${w.name}</b><small>${w.minutes} perc${w.detail?' · '+w.detail:''}</small></div>
+        <div class="kc">${Math.round(w.kcal)} kcal</div>
+        <button class="del" data-idx="${idx}" data-act="delworkout">✕</button>`;
+      wl.appendChild(row);
+    });
+  }
+}
+
+// ================= NAP VÁLTÁS =================
+async function goToDate(d){
+  curDate = d;
+  dayData = await loadDay(fmtDate(curDate));
+  renderHeader();
+  renderHome();
+}
+
+// ================= ÉTEL VÁLASZTÓ LAP =================
+function openPicker(meal){
+  pickerCurrentMeal = meal;
+  document.getElementById('pickerTitle').textContent = MEAL_META[meal].icon+' '+MEAL_META[meal].label+' — válassz';
+  document.getElementById('pickerSearch').value='';
+  renderPickerList('');
+  openSheet('sheetPicker');
+}
+function renderPickerList(q){
+  const list = document.getElementById('pickerList');
+  const foods = allFoods(pickerCurrentMeal);
+  const filtered = q ? foods.filter(f=>f.n.toLowerCase().includes(q.toLowerCase())) : foods;
+  if(filtered.length===0){ list.innerHTML = '<div class="hint" style="padding:20px 4px">Nincs találat.</div>'; return; }
+  list.innerHTML = filtered.map((f,i)=>{
+    const realIdx = foods.indexOf(f);
+    return `<div class="pick" data-act="pickfood" data-idx="${realIdx}">
+      <div class="t"><b>${f.n}</b><small>${f.ing?f.ing.slice(0,60)+(f.ing.length>60?'…':''):''}</small></div>
+      <div class="m"><div class="k">${f.k} kcal</div><div class="mm">F${f.p} Sz${f.c} Zs${f.f}</div></div>
+    </div>`;
+  }).join('');
+}
+function openDetail(food, meal){
+  document.getElementById('detailTitle').textContent = food.n;
+  const body = document.getElementById('detailBody');
+  body.innerHTML = `
+    <div class="row3" style="margin-bottom:14px">
+      <div class="macro m-p"><b>${food.p}g</b><small>Fehérje</small></div>
+      <div class="macro m-c"><b>${food.c}g</b><small>Szénhidrát</small></div>
+      <div class="macro m-f"><b>${food.f}g</b><small>Zsír</small></div>
+    </div>
+    <div class="card tight" style="background:var(--soft);border:none;margin-bottom:10px">
+      <div class="hint"><b style="color:var(--ink)">Hozzávalók:</b><br>${food.ing||'—'}</div>
+    </div>
+    ${food.el ? `<div class="card tight" style="background:var(--soft);border:none;margin-bottom:14px">
+      <div class="hint"><b style="color:var(--ink)">Elkészítés:</b><br>${food.el}</div>
+    </div>` : ''}
+    <label class="fld"><span>Adag (szorzó, 1 = az eredeti PDF-adag)</span>
+      <input type="number" id="detailQty" value="1" step="0.5" min="0.25">
+    </label>
+    <div class="note" id="detailKcalPreview">${food.k} kcal ehhez az adaghoz</div>
+    <button class="btn" id="btnAddToMeal" style="margin-top:14px">Hozzáadás a naphoz</button>`;
+  document.getElementById('detailQty').addEventListener('input', e=>{
+    const q = parseFloat(e.target.value)||0;
+    document.getElementById('detailKcalPreview').textContent = Math.round(food.k*q)+' kcal ehhez az adaghoz';
+  });
+  document.getElementById('btnAddToMeal').onclick = async ()=>{
+    const q = parseFloat(document.getElementById('detailQty').value)||1;
+    dayData.meals[meal].push({n:food.n,p:food.p,c:food.c,f:food.f,k:food.k,qty:q});
+    await saveDay(fmtDate(curDate), dayData);
+    renderHome();
+    closeAllSheets();
+    showToast(food.n+' hozzáadva ('+meal.replace('reggeli','reggelihez')+')');
+  };
+  openSheet('sheetDetail');
+}
+
+// ================= EDZÉS LAP =================
+function renderWorkoutSheet(){
+  const chips = document.getElementById('wCatChips');
+  chips.innerHTML = `
+    <div class="chip ${wCat==='gym'?'on':''}" data-wcat="gym">🏋️ Konditerem</div>
+    <div class="chip ${wCat==='home'?'on':''}" data-wcat="home">🏠 Otthoni</div>
+    <div class="chip ${wCat==='cardio'?'on':''}" data-wcat="cardio">🏃 Futás / bicikli</div>
+    <div class="chip ${wCat==='garmin'?'on':''}" data-wcat="garmin">⌚ Garmin import</div>
+    <div class="chip ${wCat==='custom'?'on':''}" data-wcat="custom">✏️ Egyéb</div>`;
+  const content = document.getElementById('wContent');
+  if(wCat==='gym' || wCat==='home'){
+    const cat = WORKOUT_DB[wCat];
+    if(wDayIdx >= cat.days.length) wDayIdx = 0;
+    const day = cat.days[wDayIdx];
+    const hasVariants = day.variants[wWeek] !== undefined;
+    if(!hasVariants) wWeek = cat.weeks[0];
+    const exList = day.variants[wWeek] || [];
+    const kcalEst = Math.round(day.kcalPerMin * day.est);
+
+    let html = `<div class="daychips">`;
+    cat.days.forEach((d,i)=>{
+      html += `<div class="chip ${i===wDayIdx?'on':''}" data-wday="${i}">${d.name}</div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="weekchips">`;
+    cat.weeks.forEach(w=>{
+      html += `<div class="chip ${w===wWeek?'on':''}" data-wweek="${w}">${w} hét</div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="warmup-line">🔥 Bemelegítés minden edzés előtt <a href="${WARMUP_STRETCH.warmup.url}" target="_blank" rel="noopener">▶ videó</a></div>`;
+
+    html += `<div class="card tight" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <b class="serif" style="font-size:16px">${day.name}</b>
+        <span class="hint">${cat.weekLabel[wWeek]} · ~${day.est} perc · ~${kcalEst} kcal</span>
+      </div>
+      <div style="margin-top:8px">
+        ${exList.map(ex=>`
+          <div class="exrow">
+            <div class="en"><b>${ex.ex}</b><small>${ex.sets}</small></div>
+            <a class="yt" href="${ex.url}" target="_blank" rel="noopener" title="Videó megtekintése">▶</a>
+          </div>`).join('')}
+      </div>
+      <button class="btn ghost sm" style="margin-top:12px" data-act="addworkout" data-wcat="${wCat}" data-day="${wDayIdx}" data-week="${wWeek}">+ Hozzáadás a mai naphoz</button>
+    </div>
+    <div class="warmup-line">🧘 Nyújtás minden edzés után <a href="${WARMUP_STRETCH.stretch.url}" target="_blank" rel="noopener">▶ videó</a></div>`;
+
+    content.innerHTML = html;
+  } else if(wCat==='cardio'){
+    content.innerHTML = `
+      <label class="fld"><span>Típus</span>
+        <select id="cardioType">${Object.entries(CARDIO_MET).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join('')}</select>
+      </label>
+      <div class="row2">
+        <label class="fld"><span>Időtartam (perc)</span><input type="number" id="cardioMin" value="30"></label>
+        <label class="fld"><span>Táv (km, opcionális)</span><input type="number" id="cardioKm" placeholder="pl. 5"></label>
+      </div>
+      <label class="fld"><span>Testsúlyod (kg) — a becsléshez</span><input type="number" id="cardioWeight" placeholder="pl. 65" value="${settings.lastWeight||''}"></label>
+      <div class="note" id="cardioPreview">Add meg az adatokat a becsléshez.</div>
+      <button class="btn" id="btnAddCardio" style="margin-top:12px">Hozzáadás a naphoz</button>`;
+    const upd = ()=>{
+      const type = document.getElementById('cardioType').value;
+      const min = parseFloat(document.getElementById('cardioMin').value)||0;
+      const wgt = parseFloat(document.getElementById('cardioWeight').value)||65;
+      const met = CARDIO_MET[type].met;
+      const kcal = met*wgt*(min/60);
+      const fluid = SWEAT_RATE_L_PER_H*(min/60)*1000;
+      document.getElementById('cardioPreview').textContent = `Becsült égetés: ${Math.round(kcal)} kcal · Becsült folyadékveszteség: ${Math.round(fluid)} ml`;
+    };
+    ['cardioType','cardioMin','cardioWeight'].forEach(id=>document.getElementById(id).addEventListener('input',upd));
+    upd();
+    document.getElementById('btnAddCardio').onclick = async ()=>{
+      const type = document.getElementById('cardioType').value;
+      const min = parseFloat(document.getElementById('cardioMin').value)||0;
+      const km = parseFloat(document.getElementById('cardioKm').value)||0;
+      const wgt = parseFloat(document.getElementById('cardioWeight').value)||65;
+      settings.lastWeight = wgt; await saveSettings();
+      const met = CARDIO_MET[type].met;
+      const kcal = met*wgt*(min/60);
+      const fluid = SWEAT_RATE_L_PER_H*(min/60)*1000;
+      dayData.workouts.push({name:CARDIO_MET[type].label, minutes:min, kcal, fluidMl:fluid, detail: km? km+' km':''});
+      await saveDay(fmtDate(curDate), dayData);
+      renderHome(); closeAllSheets();
+      showToast('Mozgás hozzáadva: '+Math.round(kcal)+' kcal');
+    };
+  } else if(wCat==='custom') {
+    content.innerHTML = `
+      <label class="fld"><span>Megnevezés</span><input type="text" id="customWName" placeholder="pl. Úszás"></label>
+      <div class="row2">
+        <label class="fld"><span>Időtartam (perc)</span><input type="number" id="customWMin" value="30"></label>
+        <label class="fld"><span>Becsült kalória (kcal)</span><input type="number" id="customWKcal" placeholder="pl. 200"></label>
+      </div>
+      <button class="btn" id="btnAddCustomW" style="margin-top:12px">Hozzáadás a naphoz</button>`;
+    document.getElementById('btnAddCustomW').onclick = async ()=>{
+      const name = document.getElementById('customWName').value.trim() || 'Egyéb mozgás';
+      const min = parseFloat(document.getElementById('customWMin').value)||0;
+      const kcal = parseFloat(document.getElementById('customWKcal').value)||0;
+      dayData.workouts.push({name, minutes:min, kcal, fluidMl: min*13});
+      await saveDay(fmtDate(curDate), dayData);
+      renderHome(); closeAllSheets();
+      showToast(name+' hozzáadva');
+    };
+  } else if(wCat==='garmin') {
+    renderGarminImport(content);
+  }
+}
+
+// ================= GARMIN CSV IMPORT =================
+function parseCSV(text){
+  const rows = []; let i=0, field='', row=[], inQuotes=false;
+  while(i<text.length){
+    const c = text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i+=2; continue; } inQuotes=false; i++; continue; }
+      field+=c; i++; continue;
+    } else {
+      if(c==='"'){ inQuotes=true; i++; continue; }
+      if(c===','){ row.push(field); field=''; i++; continue; }
+      if(c==='\r'){ i++; continue; }
+      if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; i++; continue; }
+      field+=c; i++; continue;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.length>1 || (r.length===1 && r[0].trim()!==''));
+}
+function parseDurationToMin(str){
+  if(!str) return 0;
+  str = String(str).trim();
+  if(/^\d+(\.\d+)?$/.test(str)) return parseFloat(str);
+  const parts = str.split(':').map(Number);
+  if(parts.some(isNaN)) return 0;
+  if(parts.length===3) return parts[0]*60 + parts[1] + parts[2]/60;
+  if(parts.length===2) return parts[0] + parts[1]/60;
+  return 0;
+}
+function parseGarminDate(str){
+  if(!str) return null;
+  str = String(str).trim();
+  let m = str.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  m = str.match(/(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+  if(m) return `${m[3]}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
+  const d = new Date(str);
+  if(!isNaN(d.getTime())) return fmtDate(d);
+  return null;
+}
+function guessCardioType(typeStr){
+  const s = (typeStr||'').toLowerCase();
+  if(s.includes('bik') || s.includes('cycl') || s.includes('kerék')) return 'biciklizes_kozepes';
+  if(s.includes('walk') || s.includes('séta') || s.includes('gyalog')) return 'gyaloglas';
+  return 'futas_kozepes';
+}
+let garminRows = null, garminHeaders = null;
+function renderGarminImport(content){
+  content.innerHTML = `
+    <div class="note" style="margin-bottom:12px">
+      A Garmin Connect weboldalán (nem a mobilappban) nyisd meg az <b>Activities</b> (Tevékenységek) listát, majd a lista tetején keresd az <b>Export CSV</b> gombot — ez letölti az összes aktivitásod egy CSV fájlban. Töltsd fel ide, utána párosítsd az oszlopokat.
+    </div>
+    <label class="fld"><span>Garmin CSV fájl</span><input type="file" id="garminCsvInput" accept=".csv,text/csv"></label>
+    <div id="garminMapWrap"></div>
+  `;
+  document.getElementById('garminCsvInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if(rows.length<2){ showToast('Nem sikerült beolvasni a CSV-t.'); return; }
+    garminHeaders = rows[0];
+    garminRows = rows.slice(1);
+    renderGarminMapping();
+  });
+}
+function renderGarminMapping(){
+  const wrap = document.getElementById('garminMapWrap');
+  const guess = (keywords)=>{
+    const idx = garminHeaders.findIndex(h=>keywords.some(k=>h.toLowerCase().includes(k)));
+    return idx;
+  };
+  const dateGuess = guess(['date','dátum']);
+  const typeGuess = guess(['type','típus','activity type']);
+  const durGuess = guess(['time','idő','duration']);
+  const distGuess = guess(['distance','táv']);
+  const kcalGuess = guess(['calor','kalória']);
+  const opt = (sel)=>garminHeaders.map((h,i)=>`<option value="${i}" ${i===sel?'selected':''}>${h}</option>`).join('')+`<option value="-1" ${sel===-1?'selected':''}>— nincs —</option>`;
+  wrap.innerHTML = `
+    <div class="hint" style="margin:12px 0 8px">${garminRows.length} sor beolvasva. Párosítsd az oszlopokat:</div>
+    <label class="fld"><span>Dátum oszlopa</span><select id="mapDate">${opt(dateGuess)}</select></label>
+    <label class="fld"><span>Aktivitás típusa</span><select id="mapType">${opt(typeGuess)}</select></label>
+    <label class="fld"><span>Időtartam (perc vagy hh:mm:ss)</span><select id="mapDur">${opt(durGuess)}</select></label>
+    <label class="fld"><span>Táv (km, opcionális)</span><select id="mapDist">${opt(distGuess)}</select></label>
+    <label class="fld"><span>Kalória (opcionális — ha üres, becsüljük)</span><select id="mapKcal">${opt(kcalGuess)}</select></label>
+    <label class="fld"><span>Testsúlyod (kg) — a becsléshez, ha nincs kalória oszlop</span><input type="number" id="garminWeight" value="${settings.lastWeight||65}"></label>
+    <button class="btn" id="btnGarminImport" style="margin-top:10px">Importálás</button>
+    <div class="note hidden" id="garminImportResult"></div>
+  `;
+  document.getElementById('btnGarminImport').onclick = async ()=>{
+    const dIdx = +document.getElementById('mapDate').value;
+    const tIdx = +document.getElementById('mapType').value;
+    const durIdx = +document.getElementById('mapDur').value;
+    const distIdx = +document.getElementById('mapDist').value;
+    const kcalIdx = +document.getElementById('mapKcal').value;
+    const wgt = parseFloat(document.getElementById('garminWeight').value)||65;
+    if(dIdx===-1 || durIdx===-1){ showToast('A dátum és az időtartam oszlop kötelező.'); return; }
+    settings.lastWeight = wgt; await saveSettings();
+
+    const byDate = {};
+    let skipped = 0;
+    garminRows.forEach(r=>{
+      const dateStr = parseGarminDate(r[dIdx]);
+      const min = parseDurationToMin(r[durIdx]);
+      if(!dateStr || !min){ skipped++; return; }
+      const typeStr = tIdx>=0 ? r[tIdx] : '';
+      const km = distIdx>=0 ? parseFloat(String(r[distIdx]).replace(',','.'))||0 : 0;
+      let kcal = kcalIdx>=0 ? parseFloat(String(r[kcalIdx]).replace(/[, ]/g,''))||0 : 0;
+      if(!kcal){
+        const metKey = guessCardioType(typeStr);
+        kcal = CARDIO_MET[metKey].met * wgt * (min/60);
+      }
+      const fluid = SWEAT_RATE_L_PER_H*(min/60)*1000;
+      if(!byDate[dateStr]) byDate[dateStr] = [];
+      byDate[dateStr].push({ name: 'Garmin: '+(typeStr||'Aktivitás'), minutes: Math.round(min), kcal, fluidMl: fluid, detail: km? km+' km':'' });
+    });
+
+    let daysCount = 0, entriesCount = 0;
+    for(const ds of Object.keys(byDate)){
+      const dd = await loadDay(ds);
+      byDate[ds].forEach(w=>{ dd.workouts.push(w); entriesCount++; });
+      await saveDay(ds, dd);
+      daysCount++;
+    }
+    if(fmtDate(curDate) in byDate){ dayData = await loadDay(fmtDate(curDate)); renderHome(); }
+
+    const res = document.getElementById('garminImportResult');
+    res.classList.remove('hidden');
+    res.textContent = `✅ ${entriesCount} edzés importálva ${daysCount} napra.` + (skipped? ` (${skipped} sor kihagyva hibás adat miatt.)`:'');
+    showToast('Garmin import kész: '+entriesCount+' edzés');
+  };
+}
+
+// ================= ÉTELEK KÖNYVTÁR TAB =================
+let foodsCat = 'reggeli';
+function renderFoodsTab(){
+  const chips = document.getElementById('catChips');
+  chips.innerHTML = MEAL_ORDER.map(m=>`<div class="chip ${foodsCat===m?'on':''}" data-fcat="${m}">${MEAL_META[m].icon} ${MEAL_META[m].label}</div>`).join('');
+  renderFoodList('');
+}
+function renderFoodList(q){
+  const wrap = document.getElementById('foodListWrap');
+  const foods = allFoods(foodsCat);
+  const filtered = q ? foods.filter(f=>f.n.toLowerCase().includes(q.toLowerCase())) : foods;
+  if(filtered.length===0){ wrap.innerHTML='<div class="hint" style="padding:14px 4px">Nincs találat.</div>'; return; }
+  wrap.innerHTML = filtered.map(f=>`
+    <div class="pick" data-act="viewfood" data-name="${encodeURIComponent(f.n)}" data-cat="${foodsCat}">
+      <div class="t"><b>${f.n}</b><small>${f.ing?f.ing.slice(0,70)+(f.ing.length>70?'…':''):''}</small></div>
+      <div class="m"><div class="k">${f.k} kcal</div><div class="mm">F${f.p} Sz${f.c} Zs${f.f}</div></div>
+    </div>`).join('');
+}
+
+// ================= NAPLÓ TAB =================
+async function renderLogTab(){
+  const wrap = document.getElementById('historyWrap');
+  if(daysIndex.length===0){ wrap.innerHTML = '<div class="hint" style="padding:14px 4px">Még nincs korábbi nap rögzítve.</div>'; return; }
+  const sorted = [...daysIndex].sort().reverse().slice(0,60);
+  let html = '';
+  for(const ds of sorted){
+    const d = await loadDay(ds);
+    let kcal=0; MEAL_ORDER.forEach(m=>(d.meals[m]||[]).forEach(it=>kcal+=it.k*it.qty));
+    const burn = (d.workouts||[]).reduce((s,w)=>s+(w.kcal||0),0);
+    const dateObj = new Date(ds+'T00:00:00');
+    const label = dateObj.toLocaleDateString('hu-HU',{month:'short',day:'numeric',weekday:'short'});
+    html += `<div class="daylist" data-act="gotoday" data-date="${ds}">
+      <span>${label}</span>
+      <span>${Math.round(kcal)} kcal ${burn? '· 🔥'+Math.round(burn):''} ${kcal<=settings.kcalGoal&&kcal>0?'<span class="dot"></span>':''}</span>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+// ================= BEÁLLÍTÁSOK TAB =================
+function renderSettingsTab(){
+  document.getElementById('setKcal').value = settings.kcalGoal;
+  document.getElementById('setP').value = settings.pPct;
+  document.getElementById('setC').value = settings.cPct;
+  document.getElementById('setF').value = settings.fPct;
+  updatePctHint();
+
+  const nr = document.getElementById('notifRows');
+  nr.innerHTML = MEAL_ORDER.map(m=>`
+    <label class="fld"><span>${MEAL_META[m].icon} ${MEAL_META[m].label}</span>
+      <input type="time" data-notif="${m}" value="${settings.notif[m]}">
+    </label>`).join('');
+  nr.querySelectorAll('input[data-notif]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      settings.notif[inp.dataset.notif] = inp.value;
+      await saveSettings();
+    });
+  });
+  updateNotifStatus();
+}
+function updatePctHint(){
+  const p=+document.getElementById('setP').value||0, c=+document.getElementById('setC').value||0, f=+document.getElementById('setF').value||0;
+  const sum = p+c+f;
+  const el = document.getElementById('pctHint');
+  el.textContent = `Összesen: ${sum}%`;
+  el.style.color = sum===100 ? 'var(--muted)' : '#B3541E';
+}
+function updateNotifStatus(){
+  const el = document.getElementById('notifStatus');
+  if(!('Notification' in window)){ el.textContent='Ez a böngésző nem támogatja az értesítéseket.'; return; }
+  if(Notification.permission==='granted' && settings.notifEnabled) el.textContent='✅ Az értesítések engedélyezve vannak.';
+  else if(Notification.permission==='denied') el.textContent='⚠️ Az értesítések le vannak tiltva a böngésző beállításaiban.';
+  else el.textContent='Az értesítések még nincsenek engedélyezve.';
+}
+
+// ================= TDEE =================
+function calcTDEE(){
+  const sex = document.getElementById('tdeeSex').value;
+  const age = +document.getElementById('tdeeAge').value;
+  const w = +document.getElementById('tdeeWeight').value;
+  const h = +document.getElementById('tdeeHeight').value;
+  const act = +document.getElementById('tdeeActivity').value;
+  if(!age||!w||!h){ showToast('Add meg az összes adatot.'); return; }
+  const bmr = sex==='f' ? (10*w + 6.25*h - 5*age - 161) : (10*w + 6.25*h - 5*age + 5);
+  const tdee = Math.round(bmr*act);
+  const cut = Math.round(tdee - (tdee*0.2));
+  const water = (w*0.033).toFixed(1);
+  const proteinLo = Math.round(w*1.8);
+  const proteinHi = Math.round(w*2.2);
+  const box = document.getElementById('tdeeResult');
+  box.classList.remove('hidden');
+  box.innerHTML = `<b>Alapanyagcsere (BMR):</b> ${Math.round(bmr)} kcal/nap<br>
+    <b>TDEE (fenntartó kalória):</b> ${tdee} kcal/nap<br>
+    <b>~20%-os deficit (fogyáshoz):</b> ${cut} kcal/nap<br>
+    <b>💧 Napi vízszükséglet:</b> ${water} liter<br>
+    <b>🥩 Napi fehérjeszükséglet:</b> ${proteinLo}–${proteinHi} g<br>
+    <span style="font-size:11px">A programban 1300–1500 kcal ajánlott — ez tipikusan ez alatt van, ami erős deficitnek számít. Figyeld a tested visszajelzéseit.</span>`;
+}
+
+// ================= NOTIFIKÁCIÓ =================
+let notifiedToday = {};
+function checkNotifications(){
+  if(!settings.notifEnabled || Notification.permission!=='granted') return;
+  const now = new Date();
+  const hhmm = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const todayKey = fmtDate(now);
+  if(notifiedToday.date !== todayKey){ notifiedToday = {date:todayKey}; }
+  MEAL_ORDER.forEach(m=>{
+    if(settings.notif[m]===hhmm && !notifiedToday[m]){
+      notifiedToday[m]=true;
+      try{
+        new Notification(MEAL_META[m].icon+' '+MEAL_META[m].label+' ideje', {
+          body: 'Itt az ideje megtervezni a(z) '+MEAL_META[m].label.toLowerCase()+'t. Nyisd meg az appot a választáshoz.',
+          tag: 'meal-'+m
+        });
+      }catch(e){}
+    }
+  });
+}
+setInterval(checkNotifications, 20000);
+
+// ================= UI SEGÉDEK =================
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(()=>t.classList.remove('on'), 2200);
+}
+function openSheet(id){
+  document.getElementById('sheetBg').classList.add('on');
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function closeAllSheets(){
+  document.getElementById('sheetBg').classList.remove('on');
+  document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('on'));
+  if(typeof bcStopCamera === 'function') bcStopCamera();
+}
+function switchTab(tab){
+  document.querySelectorAll('section[id^="tab-"]').forEach(s=>s.classList.add('hidden'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  document.querySelectorAll('.tabbtn').forEach(b=>b.classList.toggle('on', b.dataset.tab===tab));
+  if(tab==='foods') renderFoodsTab();
+  if(tab==='log') renderLogTab();
+  if(tab==='settings') renderSettingsTab();
+}
+
+// ================= ESEMÉNYKEZELÉS =================
+document.addEventListener('click', async (e)=>{
+  const act = e.target.closest('[data-act]');
+  if(act){
+    const a = act.dataset.act;
+    if(a==='openpicker'){ openPicker(act.dataset.meal); }
+    else if(a==='delitem'){
+      dayData.meals[act.dataset.meal].splice(+act.dataset.idx,1);
+      await saveDay(fmtDate(curDate), dayData); renderHome();
+    }
+    else if(a==='delworkout'){
+      dayData.workouts.splice(+act.dataset.idx,1);
+      await saveDay(fmtDate(curDate), dayData); renderHome();
+    }
+    else if(a==='pickfood'){
+      const foods = allFoods(pickerCurrentMeal);
+      openDetail(foods[+act.dataset.idx], pickerCurrentMeal);
+    }
+    else if(a==='viewfood'){
+      const foods = allFoods(act.dataset.cat);
+      const f = foods.find(x=>x.n===decodeURIComponent(act.dataset.name));
+      pickerCurrentMeal = act.dataset.cat;
+      openDetail(f, act.dataset.cat);
+    }
+    else if(a==='addworkout'){
+      const cat = WORKOUT_DB[act.dataset.wcat];
+      const day = cat.days[+act.dataset.day];
+      const week = act.dataset.week;
+      const kcal = day.kcalPerMin*day.est;
+      dayData.workouts.push({name:day.name, minutes:day.est, kcal, fluidMl: day.est*13, detail:cat.weekLabel[week]});
+      await saveDay(fmtDate(curDate), dayData);
+      renderHome(); closeAllSheets();
+      showToast(day.name+' hozzáadva ('+Math.round(kcal)+' kcal)');
+    }
+    else if(a==='gotoday'){
+      curDate = new Date(act.dataset.date+'T00:00:00');
+      dayData = await loadDay(fmtDate(curDate));
+      renderHeader(); renderHome();
+      switchTab('home');
+    }
+  }
+  const closeBtn = e.target.closest('[data-close]');
+  if(closeBtn || e.target.id==='sheetBg'){ closeAllSheets(); }
+
+  const tabBtn = e.target.closest('[data-tab]');
+  if(tabBtn){ switchTab(tabBtn.dataset.tab); }
+
+  const fcatBtn = e.target.closest('[data-fcat]');
+  if(fcatBtn){ foodsCat=fcatBtn.dataset.fcat; renderFoodsTab(); }
+
+  const wcatBtn = e.target.closest('[data-wcat]');
+  if(wcatBtn){ wCat=wcatBtn.dataset.wcat; wDayIdx=0; renderWorkoutSheet(); }
+
+  const wdayBtn = e.target.closest('[data-wday]');
+  if(wdayBtn){ wDayIdx=+wdayBtn.dataset.wday; renderWorkoutSheet(); }
+
+  const wweekBtn = e.target.closest('[data-wweek]');
+  if(wweekBtn){ wWeek=wweekBtn.dataset.wweek; renderWorkoutSheet(); }
+});
+
+document.getElementById('btnDatePrev').onclick = ()=>{ const d=new Date(curDate); d.setDate(d.getDate()-1); goToDate(d); };
+document.getElementById('btnDateNext').onclick = ()=>{ const d=new Date(curDate); d.setDate(d.getDate()+1); goToDate(d); };
+
+document.getElementById('pickerSearch').addEventListener('input', e=>renderPickerList(e.target.value));
+document.getElementById('foodSearch').addEventListener('input', e=>renderFoodList(e.target.value));
+
+document.getElementById('btnAddWorkout').onclick = ()=>{ renderWorkoutSheet(); openSheet('sheetWorkout'); };
+
+document.getElementById('btnSaveGoals').onclick = async ()=>{
+  settings.kcalGoal = +document.getElementById('setKcal').value||1400;
+  settings.pPct = +document.getElementById('setP').value||35;
+  settings.cPct = +document.getElementById('setC').value||35;
+  settings.fPct = +document.getElementById('setF').value||30;
+  await saveSettings();
+  renderHome();
+  showToast('Célok elmentve');
+};
+['setP','setC','setF'].forEach(id=>document.getElementById(id).addEventListener('input', updatePctHint));
+
+document.getElementById('btnCalcTdee').onclick = calcTDEE;
+
+document.getElementById('btnEnableNotif').onclick = async ()=>{
+  if(!('Notification' in window)){ showToast('A böngésző nem támogatja.'); return; }
+  const perm = await Notification.requestPermission();
+  settings.notifEnabled = perm==='granted';
+  await saveSettings();
+  updateNotifStatus();
+  if(perm==='granted') showToast('Értesítések engedélyezve!');
+};
+
+// ================= ÉTEL IMPORT / EXPORT (PDF-előkészítés) =================
+const FOOD_IMPORT_PROMPT = "Az étrend PDF-ből szeretnék egy JSON fájlt, amit egy saját appomba tudok importálni. Nézd át a feltöltött PDF-et, és minden benne szereplő ételt/receptet alakíts át pontosan ebbe a JSON formátumba (a kulcsok jelentése: n=név, p=fehérje gramm, c=szénhidrát gramm, f=zsír gramm, k=kalória, ing=hozzávalók egy mondatban, el=elkészítés lépései egy bekezdésben):\n\n{\n  \"reggeli\": [ {\"n\":\"...\",\"p\":0,\"c\":0,\"f\":0,\"k\":0,\"ing\":\"...\",\"el\":\"...\"} ],\n  \"tizorai\": [ ... ],\n  \"ebed\": [ ... ],\n  \"uzsonna\": [ ... ],\n  \"vacsora\": [ ... ]\n}\n\nHa a PDF-ben más kategóriák vannak (pl. csak egyfajta étkezés, vagy más elnevezés), akkor is ezt az 5 kulcsot használd, és a legjobban illő kategóriába oszd be az ételeket. Csak a JSON-t add vissza egy letölthető .json fájlban, semmi mást ne találj ki hozzá, csak ami ténylegesen szerepel a PDF-ben.";
+
+document.getElementById('btnCopyPrompt').onclick = async ()=>{
+  try{
+    await navigator.clipboard.writeText(FOOD_IMPORT_PROMPT);
+    showToast('Prompt vágólapra másolva!');
+  }catch(e){
+    showToast('Nem sikerült másolni — jelöld ki kézzel.');
+  }
+};
+
+document.getElementById('btnExportFoods').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(customFoods, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'sajat_etelek_export.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+document.getElementById('foodJsonInput').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const resEl = document.getElementById('foodImportResult');
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    let added = 0, skipped = 0;
+    MEAL_ORDER.forEach(cat=>{
+      const arr = data[cat];
+      if(!Array.isArray(arr)) return;
+      arr.forEach(item=>{
+        if(!item || !item.n) return;
+        const exists = allFoods(cat).some(f=>f.n===item.n);
+        if(exists){ skipped++; return; }
+        customFoods[cat].push({
+          n: item.n, p:+item.p||0, c:+item.c||0, f:+item.f||0,
+          k: +item.k || Math.round((+item.p||0)*4 + (+item.c||0)*4 + (+item.f||0)*9),
+          ing: item.ing||'', el: item.el||''
+        });
+        added++;
+      });
+    });
+    await saveCustomFoods();
+    resEl.classList.remove('hidden');
+    resEl.textContent = `✅ ${added} új étel importálva.` + (skipped? ` (${skipped} már szerepelt a listában, kihagyva.)`:'');
+    showToast(added+' étel hozzáadva a listához');
+    if(document.getElementById('tab-foods') && !document.getElementById('tab-foods').classList.contains('hidden')) renderFoodsTab();
+  }catch(err){
+    resEl.classList.remove('hidden');
+    resEl.textContent = '⚠️ Nem sikerült beolvasni a fájlt — ellenőrizd, hogy érvényes JSON-e.';
+  }
+  e.target.value = '';
+});
+
+document.getElementById('btnNewFood').onclick = ()=>{
+  document.getElementById('nfCat').value = foodsCat;
+  document.getElementById('nfName').value='';
+  document.getElementById('nfP').value=0; document.getElementById('nfC').value=0; document.getElementById('nfF').value=0;
+  document.getElementById('nfKcal').value=''; document.getElementById('nfIng').value=''; document.getElementById('nfEl').value='';
+  openSheet('sheetNewFood');
+};
+document.getElementById('btnSaveNewFood').onclick = async ()=>{
+  const cat = document.getElementById('nfCat').value;
+  const name = document.getElementById('nfName').value.trim();
+  if(!name){ showToast('Add meg az étel nevét.'); return; }
+  const p = +document.getElementById('nfP').value||0;
+  const c = +document.getElementById('nfC').value||0;
+  const f = +document.getElementById('nfF').value||0;
+  let k = +document.getElementById('nfKcal').value;
+  if(!k) k = Math.round(p*4 + c*4 + f*9);
+  const ing = document.getElementById('nfIng').value.trim();
+  const el = document.getElementById('nfEl').value.trim();
+  customFoods[cat].push({n:name,p,c,f,k,ing,el});
+  await saveCustomFoods();
+  closeAllSheets();
+  showToast('Étel mentve: '+name);
+  if(document.getElementById('tab-foods') && !document.getElementById('tab-foods').classList.contains('hidden')){
+    foodsCat = cat; renderFoodsTab();
+  }
+};
+
+// ================= VONALKÓD BEOLVASÁS =================
+let bcStream = null, bcDetector = null, bcRAF = null, bcProduct = null;
+let bcZXingReader = null, bcZXingLoading = null;
+
+document.getElementById('btnScanBarcode').onclick = ()=>{
+  document.getElementById('bcResult').classList.add('hidden');
+  document.getElementById('bcManualCode').value = '';
+  document.getElementById('bcStatus').textContent = '';
+  bcProduct = null;
+  openSheet('sheetBarcode');
+};
+
+function loadZXing(){
+  if(window.ZXingBrowser) return Promise.resolve(window.ZXingBrowser);
+  if(bcZXingLoading) return bcZXingLoading;
+  bcZXingLoading = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js';
+    s.onload = ()=> resolve(window.ZXingBrowser);
+    s.onerror = ()=> reject(new Error('ZXing betöltése sikertelen'));
+    document.head.appendChild(s);
+  });
+  return bcZXingLoading;
+}
+
+async function bcStartCamera(){
+  const statusEl = document.getElementById('bcStatus');
+  const btnStart = document.getElementById('btnBcStart');
+  btnStart.disabled = true;
+
+  if(!window.isSecureContext){
+    statusEl.textContent = '⚠️ A kamera csak biztonságos (HTTPS) kapcsolaton érhető el. Ha most helyi fájlként nyitottad meg ezt az oldalt (pl. dupla kattintással), tedd fel GitHubra, és az élő matiz900.github.io/napi-etrend-edzes/ címről nyisd meg — ott már működni fog.';
+    btnStart.disabled = false;
+    return;
+  }
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    statusEl.textContent = '⚠️ Ez a böngésző nem támogatja a kamera-hozzáférést. Próbáld Chrome-mal vagy Safarival.';
+    btnStart.disabled = false;
+    return;
+  }
+
+  statusEl.textContent = 'Kamera indítása…';
+  try{
+    bcStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  }catch(e){
+    let msg = 'Nem sikerült elérni a kamerát.';
+    if(e && e.name === 'NotAllowedError') msg = '⚠️ A kamera-hozzáférés le van tiltva. Engedélyezd a böngésző címsora melletti lakat/beállítás ikonnál, majd próbáld újra.';
+    else if(e && e.name === 'NotFoundError') msg = '⚠️ Nem található kamera ezen az eszközön.';
+    else if(e && e.name === 'NotReadableError') msg = '⚠️ A kamerát épp más alkalmazás használja — zárd be azt, majd próbáld újra.';
+    else msg = '⚠️ Nem sikerült elérni a kamerát (' + (e && e.name ? e.name : 'ismeretlen hiba') + ').';
+    statusEl.textContent = msg;
+    btnStart.disabled = false;
+    return;
+  }
+  const video = document.getElementById('bcVideo');
+  video.srcObject = bcStream;
+  document.getElementById('bcCameraWrap').style.display = 'block';
+  btnStart.style.display = 'none';
+  btnStart.disabled = false;
+  document.getElementById('btnBcStop').style.display = '';
+
+  if('BarcodeDetector' in window){
+    try{
+      bcDetector = new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+      statusEl.textContent = 'Kamera aktív — tartsd a vonalkódot a képbe.';
+      bcScanLoopNative();
+      return;
+    }catch(e){ /* essünk vissza ZXing-re */ }
+  }
+  // Fallback: ZXing (Safari/iOS és régebbi böngészők is támogatják)
+  statusEl.textContent = 'Kamera aktív — tartsd a vonalkódot a képbe (kompatibilitási mód betöltése)…';
+  try{
+    const ZX = await loadZXing();
+    bcZXingReader = new ZX.BrowserMultiFormatReader();
+    statusEl.textContent = 'Kamera aktív — tartsd a vonalkódot a képbe.';
+    bcZXingReader.decodeFromStream(bcStream, video, (result, err)=>{
+      if(result && bcStream){
+        const val = result.getText();
+        bcStopCamera();
+        document.getElementById('bcManualCode').value = val;
+        bcLookup(val);
+      }
+    });
+  }catch(e){
+    statusEl.textContent = 'A vonalkód-felismerés nem támogatott ezen a böngészőn — a kamerakép látszik, de a leolvasáshoz add meg a kódot kézzel a mezőben.';
+  }
+}
+function bcStopCamera(){
+  if(bcRAF) cancelAnimationFrame(bcRAF);
+  if(bcZXingReader){ try{ bcZXingReader.reset(); }catch(e){} bcZXingReader = null; }
+  if(bcStream){ bcStream.getTracks().forEach(t=>t.stop()); bcStream = null; }
+  document.getElementById('bcCameraWrap').style.display = 'none';
+  document.getElementById('btnBcStart').style.display = '';
+  document.getElementById('btnBcStop').style.display = 'none';
+}
+async function bcScanLoopNative(){
+  const video = document.getElementById('bcVideo');
+  if(!bcStream) return;
+  try{
+    const codes = await bcDetector.detect(video);
+    if(codes && codes.length){
+      const val = codes[0].rawValue;
+      bcStopCamera();
+      document.getElementById('bcManualCode').value = val;
+      await bcLookup(val);
+      return;
+    }
+  }catch(e){}
+  bcRAF = requestAnimationFrame(bcScanLoopNative);
+}
+document.getElementById('btnBcStart').onclick = bcStartCamera;
+document.getElementById('btnBcStop').onclick = bcStopCamera;
+
+document.getElementById('btnBcLookup').onclick = ()=>{
+  const code = document.getElementById('bcManualCode').value.trim();
+  if(!code){ showToast('Add meg vagy olvasd be a vonalkódot.'); return; }
+  bcLookup(code);
+};
+
+async function bcLookup(code){
+  const statusEl = document.getElementById('bcStatus');
+  statusEl.textContent = 'Termék keresése…';
+  document.getElementById('bcResult').classList.add('hidden');
+  try{
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json`);
+    const data = await res.json();
+    if(!data || data.status !== 1 || !data.product){
+      statusEl.textContent = '⚠️ Nem található ez a termék az Open Food Facts adatbázisban.';
+      return;
+    }
+    const pr = data.product;
+    const nutr = pr.nutriments || {};
+    bcProduct = {
+      name: pr.product_name || pr.generic_name || ('Termék ' + code),
+      brand: pr.brands || '',
+      per100: {
+        k: Math.round(nutr['energy-kcal_100g'] ?? (nutr['energy_100g'] ? nutr['energy_100g']/4.184 : 0)) || 0,
+        p: +(nutr.proteins_100g || 0),
+        c: +(nutr.carbohydrates_100g || 0),
+        f: +(nutr.fat_100g || 0),
+      }
+    };
+    statusEl.textContent = '';
+    document.getElementById('bcResultCard').innerHTML =
+      `<b>${bcProduct.name}</b>${bcProduct.brand? ' <span class="hint">('+bcProduct.brand+')</span>':''}<br>
+       <span class="hint">100 g-ra: ${bcProduct.per100.k} kcal · F${bcProduct.per100.p}g Sz${bcProduct.per100.c}g Z${bcProduct.per100.f}g</span>`;
+    document.getElementById('bcGrams').value = 100;
+    bcUpdatePreview();
+    document.getElementById('bcResult').classList.remove('hidden');
+  }catch(e){
+    statusEl.textContent = '⚠️ Hiba a lekérdezés közben — ellenőrizd az internetkapcsolatot.';
+  }
+}
+function bcUpdatePreview(){
+  if(!bcProduct) return;
+  const g = +document.getElementById('bcGrams').value || 0;
+  const ratio = g/100;
+  const k = Math.round(bcProduct.per100.k*ratio);
+  const p = +(bcProduct.per100.p*ratio).toFixed(1);
+  const c = +(bcProduct.per100.c*ratio).toFixed(1);
+  const f = +(bcProduct.per100.f*ratio).toFixed(1);
+  document.getElementById('bcPreview').textContent = `${g} g: ${k} kcal · F${p}g Sz${c}g Z${f}g`;
+}
+document.getElementById('bcGrams').addEventListener('input', bcUpdatePreview);
+
+function bcCurrentFood(){
+  const g = +document.getElementById('bcGrams').value || 0;
+  const ratio = g/100;
+  return {
+    n: bcProduct.name,
+    p: +(bcProduct.per100.p*ratio).toFixed(1),
+    c: +(bcProduct.per100.c*ratio).toFixed(1),
+    f: +(bcProduct.per100.f*ratio).toFixed(1),
+    k: Math.round(bcProduct.per100.k*ratio),
+    ing: `${g} g`, el: ''
+  };
+}
+document.getElementById('btnBcAddToLog').onclick = async ()=>{
+  if(!bcProduct) return;
+  const cat = document.getElementById('bcCat').value;
+  const food = bcCurrentFood();
+  dayData.meals[cat].push({n:food.n,p:food.p,c:food.c,f:food.f,k:food.k,qty:1});
+  await saveDay(fmtDate(curDate), dayData);
+  bcStopCamera();
+  closeAllSheets();
+  renderHome();
+  showToast(food.n+' hozzáadva');
+};
+document.getElementById('btnBcSaveOnly').onclick = async ()=>{
+  if(!bcProduct) return;
+  const cat = document.getElementById('bcCat').value;
+  const food = bcCurrentFood();
+  customFoods[cat].push(food);
+  await saveCustomFoods();
+  bcStopCamera();
+  closeAllSheets();
+  showToast(food.n+' mentve az étellistába');
+  if(document.getElementById('tab-foods') && !document.getElementById('tab-foods').classList.contains('hidden')){
+    foodsCat = cat; renderFoodsTab();
+  }
+};
+
+// ================= SÖTÉT MÓD =================
+function applyDarkMode(){
+  document.documentElement.classList.toggle('dark', !!settings.darkMode);
+  const btn = document.getElementById('btnDarkMode');
+  if(btn) btn.textContent = settings.darkMode ? '☀️' : '🌙';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', settings.darkMode ? '#171511' : '#F7F4EF');
+}
+document.getElementById('btnDarkMode').onclick = async ()=>{
+  settings.darkMode = !settings.darkMode;
+  applyDarkMode();
+  await saveSettings();
+};
+
+// ================= INDÍTÁS =================
+(async function init(){
+  await loadSettings();
+  applyDarkMode();
+  dayData = await loadDay(fmtDate(curDate));
+  renderHeader();
+  renderHome();
+  renderKnowledge();
+  renderFiberFoodList();
+})();
+
+</script>
+</body>
+</html>

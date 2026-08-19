@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Napi terv — Fejlesztési napló</title>
+<style>
+  :root{
+    --cream:#faf6ef; --paper:#fffdf8; --ink:#3a3229;
+    --accent:#a9714a; --accent-soft:#e9dcc9; --line:#e4d8c3; --muted:#8a7c68;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;line-height:1.6;}
+  .wrap{max-width:820px;margin:0 auto;padding:32px 20px 90px;}
+  h1{font-size:1.7rem;margin:0 0 6px;color:var(--accent);border-bottom:2px solid var(--accent-soft);padding-bottom:14px;}
+  .subtitle{color:var(--muted);font-style:italic;margin-bottom:10px;}
+  .updated{font-size:0.85rem;color:var(--muted);margin-bottom:34px;}
+  h2{font-size:1.2rem;margin:38px 0 10px;color:var(--ink);background:var(--accent-soft);padding:8px 14px;border-radius:8px;}
+  h3{font-size:1.02rem;margin:20px 0 8px;color:var(--accent);}
+  p{margin:8px 0;}
+  table{width:100%;border-collapse:collapse;margin:12px 0 20px;background:var(--paper);border-radius:8px;overflow:hidden;}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:0.93rem;vertical-align:top;}
+  th{background:var(--accent-soft);}
+  ul,ol{margin:6px 0 14px 0;padding-left:22px;}
+  li{margin:4px 0;}
+  code{background:var(--accent-soft);padding:1px 6px;border-radius:4px;font-size:0.9em;}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0;}
+  .note{background:#f4ece0;border-left:4px solid var(--accent);padding:12px 16px;margin:20px 0;border-radius:6px;font-size:0.93rem;}
+  .status-done{color:#4a7a4a;font-weight:600;}
+  .status-todo{color:#a9714a;font-weight:600;}
+  .tag{display:inline-block;background:var(--accent);color:#fff;font-size:0.72rem;padding:2px 9px;border-radius:12px;margin:2px 4px 2px 0;}
+  .changelog-entry{border-left:3px solid var(--accent-soft);padding-left:14px;margin:16px 0;}
+  .changelog-date{font-weight:600;color:var(--accent);font-size:0.95rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Napi terv — Fejlesztési napló</h1>
+<div class="subtitle">Teljes architektúra, changelog, ismert korlátok, következő lépések</div>
+<div class="updated">Utolsó frissítés: 2026. augusztus 19.</div>
+
+<h2>1. Alapadatok</h2>
+<div class="card">
+<table>
+<tr><th>Élő URL</th><td>matiz900.github.io/napi-etrend-edzes/</td></tr>
+<tr><th>Repo</th><td>github.com/matiz900/napi-etrend-edzes</td></tr>
+<tr><th>Helyi mappa (Windows)</th><td><code>Documents\GitHub\napi-etrend-edzes</code></td></tr>
+<tr><th>Deployment</th><td>Fájl szerkesztése → GitHub Desktop: Commit → Push</td></tr>
+<tr><th>Architektúra</th><td>Egyetlen önálló HTML/vanilla JS fájl, framework és build lépés nélkül</td></tr>
+<tr><th>Tárolás</th><td>Böngésző <code>localStorage</code> (eszközönként, nem szinkronizált)</td></tr>
+</table>
+</div>
+
+<h2>2. Funkciók (jelenlegi állapot)</h2>
+<ul>
+<li>Napi összefoglaló kártya kalóriagyűrűvel és makró-sávokkal</li>
+<li>Ételkönyvtár 5 kategóriában (reggeli/tízórai/ebéd/uzsonna/vacsora), makrókkal, hozzávalókkal, elkészítési leírással</li>
+<li>Edzés adatbázis (terem + otthoni terv, A/B/C heti variánsok, sorozat/ismétlés, YouTube linkek)</li>
+<li>TDEE-kalkulátor (Mifflin-St Jeor egyenlet) — <span class="status-done">most már automata víz- és fehérjeszükséglet-kijelzéssel kiegészítve</span></li>
+<li>Futás/kerékpározás MET-alapú kalória- és folyadékveszteség-számító</li>
+<li>Garmin Connect CSV import, rugalmas oszlop-hozzárendeléssel</li>
+<li>Étkezési idő push-értesítések</li>
+<li>Sötét mód</li>
+<li>Edzésnaplózó</li>
+<li>Napló/history fül (60 napos visszamenőleges nézet)</li>
+<li>Egyéni étel hozzáadása + JSON import/export</li>
+<li>PWA manifest + ikonok</li>
+<li><span class="status-done">Vonalkód-beolvasás</span> (BarcodeDetector API + Open Food Facts)</li>
+<li><span class="status-done">Kávé makró kártya, per-nap be/kikapcsoló gombbal</span></li>
+<li><span class="status-done">Napi rost-tracker</span> (25–35 g cél sávval)</li>
+<li><span class="status-done">Alkoholmentes nap jelölő</span></li>
+<li><span class="status-done">Tudástár fül</span> — bővíthető cikk-adatbázis táplálkozási/életmódi tartalommal</li>
+</ul>
+
+<h2>3. Architektúra részletek</h2>
+
+<h3>3.1 Adatbázisok</h3>
+<table>
+<tr><th>Adatbázis</th><th>Elem-szám</th><th>Forrás</th></tr>
+<tr><td><code>FOOD_DB</code></td><td>143 tétel (5 kategóriában)</td><td>Szálkásító program diéta PDF + Challenge nyári étrend (39 tétel, beépítve)</td></tr>
+<tr><td>Edzés adatbázis</td><td>terem + otthoni, A/B/C variáns</td><td>Workout PDF-ek</td></tr>
+<tr><td><code>KNOWLEDGE_BASE</code></td><td>2 cikk (bővíthető)</td><td>Evidenciaalapú táplálkozástudományi irányelvek</td></tr>
+</table>
+
+<h3>3.2 Tárolási kulcsok (localStorage)</h3>
+<table>
+<tr><th>Kulcs</th><th>Tartalom</th></tr>
+<tr><td><code>napiterv:settings</code></td><td>Célok, kávé makrók, TDEE beállítások, sötét mód, értesítés</td></tr>
+<tr><td><code>napiterv:customFoods</code></td><td>Egyéni/vonalkóddal mentett ételek, kategóriánként</td></tr>
+<tr><td><code>napiterv:daysIndex</code></td><td>Napok listája, amikhez van napló-bejegyzés</td></tr>
+<tr><td><code>napiterv:day:YYYY-MM-DD</code></td><td>Egy adott nap teljes adata: étkezések, edzés, rost, alkoholmentes jelölő</td></tr>
+</table>
+
+<h3>3.3 Napi adatmodell (<code>emptyDay()</code>)</h3>
+<div class="card">
+<code>{ meals: {reggeli:[], tizorai:[], ebed:[], uzsonna:[], vacsora:[]}, workouts:[], fiberG:0, noAlcohol:false }</code>
+</div>
+
+<h2>4. Changelog</h2>
+
+<div class="changelog-entry">
+<div class="changelog-date">2026-08-19 — Tudástár + rost/alkohol tracker</div>
+<ul>
+<li>Új "Tudástár" fül: bővíthető, kibontható kártyás tartalom (<code>KNOWLEDGE_BASE</code> tömb), induláskor 2 cikkel: gyulladáscsökkentés/bélflóra-helyreállítás, fogyás alapelvek</li>
+<li>TDEE-kalkulátor kiegészítve automatikus napi vízszükséglet (testsúly × 0,033 l) és fehérjeszükséglet (testsúly × 1,8–2,2 g) kijelzéssel</li>
+<li>Napi rost-tracker: manuális grammos hozzáadás, 30 g célhoz viszonyított sáv</li>
+<li>Alkoholmentes nap jelölő kapcsoló a Ma nézeten</li>
+<li>Két önálló, app-dizájnhoz igazított referenciadokumentum: vitamin/gyulladáscsökkentés, fogyás alapelvek</li>
+</ul>
+</div>
+
+<div class="changelog-entry">
+<div class="changelog-date">2026-08-18 — Tárolás javítás, Challenge diéta, kávé, vonalkód</div>
+<ul>
+<li><b>Kritikus javítás:</b> a mentési réteg <code>window.storage</code> hívásai (fejlesztői/Claude-specifikus API) lecserélve valódi <code>localStorage</code>-ra épülő shimre — ez korábban törte volna a mentést élesben, normál böngészőben</li>
+<li>Challenge nyári étrend (39 tétel) véglegesen beépítve a <code>FOOD_DB</code>-be, nem csak eszköz-helyi importként</li>
+<li>Kávé makró kártya: Beállításoknál megadható a napi kávé fehérje/szénhidrát/zsír/kalória értéke, a Ma nézeten napi be/kikapcsolóval</li>
+<li>Vonalkód-beolvasás: kamerás felismerés a böngésző natív <code>BarcodeDetector</code> API-jával (+ kézi beviteli mező fallback), Open Food Facts lekérdezés, gramm szerinti átszámítás, hozzáadás a naphoz vagy mentés az étellistába</li>
+</ul>
+</div>
+
+<div class="changelog-entry">
+<div class="changelog-date">Korábbi fejlesztések</div>
+<ul>
+<li>Barcode scanning előkészítés, Open Food Facts integráció tervezése</li>
+<li>PDF-to-JSON import workflow kialakítása jövőbeli diéta PDF-ek onboardingjához (kódolás nélkül)</li>
+<li>Alapfunkciók: étel/edzés adatbázis, TDEE, MET-kalkulátor, Garmin import, PWA, sötét mód</li>
+</ul>
+</div>
+
+<h2>5. Ismert korlátok</h2>
+<ul>
+<li>Az adat <b>nem szinkronizálódik</b> eszközök között — tisztán eszköz-helyi <code>localStorage</code></li>
+<li>A vonalkód-felismerés a <code>BarcodeDetector</code> API-t igényli (Chrome/Android natívan támogatja; Safari/iOS-en jelenleg nincs támogatás — ott csak a kézi beviteli mező használható)</li>
+<li>A vonalkód-lekérdezéshez és Open Food Facts híváshoz internetkapcsolat szükséges (eddig az app teljesen offline is működött — ez az egyetlen funkció, ami hálózatot igényel)</li>
+<li>A Tudástár tartalma jelenleg statikus (kódba ágyazott), nincs admin felület a szerkesztéséhez — bővítés kizárólag fejlesztői közreműködéssel (kód-szerkesztéssel) lehetséges</li>
+</ul>
+
+<h2>6. Következő lépések / ötletek</h2>
+<ul>
+<li>Élesítés ellenőrzése GitHub Desktopon keresztül (Commit → Push), majd élő tesztelés — különös tekintettel a kamera-engedélyre (csak HTTPS-en/GitHub Pages-en engedélyezi a böngésző)</li>
+<li>Heti súlytrend grafikon a napló fülön, a ~0,5 kg/hét cél vonalával összevetve</li>
+<li>Napi checklist widget (lépésszám cél, alvásidő cél) a fogyás alapelvek 8 pontja alapján</li>
+<li>Tudástár bővítése további cikkekkel idővel (pl. edzés utáni regeneráció, alvási higiénia)</li>
+</ul>
+
+<div class="note">
+<strong>Kapcsolódó dokumentumok:</strong> <code>GitHub_kezikonyv.html</code> (feltöltési/frissítési útmutató), <code>Vitamin_es_gyulladascsokkentes.html</code> és <code>Fogyas_alapelvek.html</code> (a Tudástár fülbe beépített tartalmak forrásdokumentumai).
+</div>
+
+</div>
+</body>
+</html>

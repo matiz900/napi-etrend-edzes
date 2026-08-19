@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fogyás alapelvek — a rendszer</title>
+<style>
+  :root{
+    --cream:#faf6ef; --paper:#fffdf8; --ink:#3a3229;
+    --accent:#a9714a; --accent-soft:#e9dcc9; --line:#e4d8c3;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);
+    font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;line-height:1.6;}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 80px;}
+  h1{font-size:1.7rem;margin:0 0 6px;color:var(--accent);border-bottom:2px solid var(--accent-soft);padding-bottom:14px;}
+  .subtitle{color:#8a7c68;font-style:italic;margin-bottom:34px;}
+  h2{font-size:1.15rem;margin:34px 0 10px;color:var(--ink);background:var(--accent-soft);padding:8px 14px;border-radius:8px;}
+  .principle{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:14px 0;}
+  .principle h3{margin:0 0 6px;color:var(--accent);font-size:1.02rem;}
+  .principle p{margin:4px 0;}
+  .formula{background:#f4ece0;border-left:4px solid var(--accent);padding:10px 14px;border-radius:6px;font-size:0.95rem;margin:8px 0;}
+  ul{margin:6px 0 14px 0;padding-left:22px;}
+  li{margin:4px 0;}
+  .note{background:#f4ece0;border-left:4px solid var(--accent);padding:12px 16px;margin:26px 0;border-radius:6px;font-size:0.93rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Fogyás alapelvek</h1>
+<div class="subtitle">A rendszer, nem a motiváció kérdése — a Napi terv app tudástárához</div>
+
+<div class="note">
+Ez a dokumentum egy nyolc pontos, gyakorlatban jól működő fogyási protokoll alapelveit rendszerezi, kiegészítve gyakorlati, app-be illeszthető formában. Nem gyógyászati célú, hanem életmódbeli irányelvgyűjtemény.
+</div>
+
+<h2>1. A nyolc alapelv</h2>
+
+<div class="principle">
+<h3>1. Nulla alkohol</h3>
+<p>Üres kalória, rontja az alvásminőséget, csökkenti a tesztoszteronszintet, gátolja a zsírégetést. Az első dolog, amit ki kell hagyni egy zsírvesztési fázisban.</p>
+</div>
+
+<div class="principle">
+<h3>2. Napi 7 000–10 000 lépés</h3>
+<p>Passzív kalóriaégetés (NEAT), ami nem terheli a regenerációt. Napi 300–500 kcal, edzőterem nélkül is elérhető.</p>
+</div>
+
+<div class="principle">
+<h3>3. Heti 3× erőedzés</h3>
+<p>Kalóriadeficit alatt az izomtömeg könnyen lebomlik, ha nincs rá inger. Az edzés jelzi a szervezetnek, hogy tartsa meg az izmot még energiahiányos állapotban is.</p>
+</div>
+
+<div class="principle">
+<h3>4. Napi 8 óra alvás</h3>
+<p>Alváshiányban a szervezet inkább izomból, mint zsírból bont le energiát. Emellett felborul az éhséghormonok (ghrelin/leptin) egyensúlya, ami fokozott éhségérzethez vezet.</p>
+</div>
+
+<div class="principle">
+<h3>5. Napi ~500 kcal deficit</h3>
+<p>Ez heti kb. 0,5 kg tiszta zsírvesztésnek felel meg. Nem összeomlás, nem izomvesztés — fenntartható, hosszú távon követhető tempó.</p>
+<div class="formula">Heti fogyás (kg) ≈ napi deficit (kcal) × 7 / 7700</div>
+</div>
+
+<div class="principle">
+<h3>6. Napi 25–35 g rost</h3>
+<p>Stabilizálja a vércukorszintet, csökkenti az étvágyat, táplálja a bélflórát (lásd a vitamin/gyulladáscsökkentés dokumentumot).</p>
+</div>
+
+<div class="principle">
+<h3>7. Kalóriák 90%-a teljes értékű ételekből</h3>
+<p>Nem kell tökéletesnek lenni — a fennmaradó 10% rugalmasságot ad. De az arány dönt a hosszú távú fenntarthatóság és a tápanyagellátottság szempontjából.</p>
+</div>
+
+<div class="principle">
+<h3>8. Fehérje- és vízbevitel képletek</h3>
+<div class="formula">Napi vízmennyiség (liter) = testsúly (kg) × 0,033</div>
+<div class="formula">Napi fehérje (g) = testsúly (kg) × 1,8–2,2</div>
+<p>A dehidratáció gyakran éhségérzetnek álcázza magát — ivás előtt evés klasszikus hiba. A fehérje védi az izmot deficit alatt, teltségérzetet ad, és termogén hatású (emésztése több energiát igényel).</p>
+</div>
+
+<h2>2. Időtáv és elvárás</h2>
+<ul>
+<li>Ez nem egy 30 napos kihívás, hanem <strong>4–5 hónap</strong> következetes munka</li>
+<li>A cél nem a motiváció fenntartása, hanem egy <strong>rendszer</strong> kialakítása, ami motiváció nélkül is működik</li>
+<li>Aki végigcsinálja, egészségesebb állapotba kerül, mint az emberek túlnyomó többsége</li>
+</ul>
+
+<h2>3. Javasolt app-integráció</h2>
+<ul>
+<li><strong>TDEE-kalkulátor mellé:</strong> automatikus víz- és fehérjeszükséglet-kijelzés a megadott testsúly alapján (a fenti képletek szerint)</li>
+<li><strong>Napi checklist:</strong> lépésszám cél, alvásidő cél, alkoholmentes nap jelölő pipa formájában</li>
+<li><strong>Log/history fülön:</strong> heti súlytrend grafikon a ~0,5 kg/hét cél vonalával összevetve</li>
+<li><strong>Rost-tracker:</strong> a napi rostbevitel megjelenítése a makrók mellett (25–35 g cél sávval)</li>
+</ul>
+
+<div class="note">
+<strong>Állapot:</strong> ez a tartalom már beépült a Napi terv app "Tudástár" fülébe, kibontható kártyaként. Emellett a víz- és fehérjeszükséglet automatikusan megjelenik a Beállítások → TDEE-kalkulátornál, a napi rost pedig saját trackerrel követhető a Ma nézeten.
+</div>
+
+</div>
+</body>
+</html>
